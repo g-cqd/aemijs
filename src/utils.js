@@ -1,23 +1,49 @@
-const isBrowser = typeof window !== 'undefined' || typeof self !== 'undefined';
-
-const isNode = typeof process !== 'undefined' && process.versions && process.versions.node && typeof module === 'object';
-
-const getGlobal = function () {
-    "use strict";
-    const value = globalThis || self || window || global;
-    if ( value ) {
-        return value;
-    }
-    throw new Error( 'Unable to get global object.' );
+/**
+ * Get globalThis object in any scope
+ * @returns {globalThis} The globalThis object
+ */
+function getGlobal() {
+    return globalThis || self || window || global;
 };
 
 /**
- * 
- * @param {Object} object 
- * @param {Function} func 
+ * Test if in Browser Environment
+ * @returns {Boolean}
  */
-const forEntriesIn = function ( object, func ) {
-    "use strict";
+function isBrowser() {
+    return typeof window !== 'undefined' || typeof self !== 'undefined';
+};
+
+/**
+ * Test if in Node Environment
+ * @returns {Boolean}
+ */
+function isNode() {
+    return typeof process !== 'undefined' && process.versions && process.versions.node && typeof module === 'object';
+};
+
+/**
+ * Test if in standard Web Worker Environment
+ * @returns {Boolean}
+ */
+function isWorker() {
+    return typeof self !== 'undefined' && getGlobal() === self;
+};
+
+/**
+ * @callback callback
+ * @param {String|Number|Symbol} key - Entry's key
+ * @param {any} value - Entry's value
+ * @param {Number} index - Entry's index
+ * @param {Object} object - Object passed to callback
+ */
+/**
+ * Apply a function to each entry of an object
+ * @param {Object} object - Object to iterate over its entries
+ * @param {callback} func - Function to apply over each entry of passed object
+ * @returns {void}
+ */
+function forEntriesIn( object, func ) {
     let index = 0;
     for ( const key in object ) {
         if ( Object.prototype.hasOwnProperty.call( object, key ) ) {
@@ -28,11 +54,10 @@ const forEntriesIn = function ( object, func ) {
 
 /**
  * 
- * @param {Object} object 
+ * @param {Object} object - Object to get entries from
  * @returns {Array}
  */
 const getEntriesIn = function ( object ) {
-    "use strict";
     const entries = [];
     for ( const key in object ) {
         if ( Object.prototype.hasOwnProperty.call( object, key ) ) {
@@ -47,9 +72,10 @@ const getEntriesIn = function ( object ) {
  * @param {Number} number 
  * @returns {String}
  */
-const getCharByCode = function ( number ) {
-    "use strict";
+function getCharByCode( number ) {
+    /** @constant */
     const gl = getGlobal();
+
     let cache;
     if ( '_char_cache_' in gl ) {
         cache = gl._char_cache_;
@@ -72,12 +98,10 @@ const getCharByCode = function ( number ) {
 
 /**
  * Retrieve a unique identifier
- * @param {Number} length 
- * @returns {String}
+ * @param {Number} length - Length of identifier to return
+ * @returns {String} - Unique Identifier
  */
-const newIdentifier = function ( length ) {
-    "use strict";
-    length = length || 16;
+const newIdentifier = function ( length = 16 ) {
     const src = new Uint8Array( length );
     window.crypto.getRandomValues( src );
     const res = new Array( length ).fill( null );
@@ -90,6 +114,7 @@ const newIdentifier = function ( length ) {
 export {
     isBrowser,
     isNode,
+    isWorker,
     getGlobal,
     forEntriesIn,
     getEntriesIn,

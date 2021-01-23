@@ -1,34 +1,45 @@
-import { getGlobal, forEntriesIn } from './utils.js';
+import { forEntriesIn, getGlobal } from './utils.js';
 
+/**
+ * 
+ */
 class Wait {
 	constructor () { }
+	/**
+	 * @returns {{
+	 *   interactive: Function[],
+	 *   complete: Function[],
+	 *   DOMContentLoaded: Function[],
+	 *   load: Function[]
+	 * }}
+	 */
 	static register() {
 		const gl = getGlobal();
-		if ( 'WaitRegister' in gl ) {
-			return gl.WaitRegister;
-		} else {
-			const wr = Object.assign( Object.create( null ), {
+		if ( typeof gl.WaitRegister === 'undefined' ) {
+			gl.WaitRegister = {
 				interactive: [],
 				complete: [],
 				DOMContentLoaded: [],
 				load: []
-			} );
-			gl.WaitRegister = wr;
-			document.addEventListener( 'readystatechange', function () {
-				Wait.all( document.readyState );
-			} );
-			document.addEventListener( 'DOMContentLoaded', function () {
-				Wait.all( 'DOMContentLoaded' );
-			} );
-			window.addEventListener( 'load', function () {
-				Wait.all( 'load' );
-			} );
-			return gl.WaitRegister;
+			};
+			document.addEventListener( 'readystatechange', () => Wait.all( document.readyState ) );
+			document.addEventListener( 'DOMContentLoaded', () => Wait.all( 'DOMContentLoaded' ) );
+			window.addEventListener( 'load', () => Wait.all( 'load' ) );
 		}
+		return gl.WaitRegister;
 	}
+	/**
+	 * @param {string} type - Register an action to be fired when type is dispatched
+	 * @param {{
+	 *   resolve?:Function,
+	 *   reject?:Function,
+	 *   func?:Function,
+	 *   args?:any[]
+	 * }} options - Functions and args to call when action will be fired
+	 */
 	static set( type, options ) {
 		const { resolve, reject, func, args } = options;
-		const wr = Wait.register();
+		const registry = Wait.register();
 		let exec = false;
 		const { readyState } = document;
 		switch ( type ) {
@@ -60,47 +71,65 @@ class Wait {
 			}
 		}
 		if ( exec === false ) {
-			wr[type].push( function () {
-				return new Promise( function ( res, rej ) {
+			registry[type].push( function () {
+				return new Promise( function ( resolve_, reject_ ) {
 					try {
-						return res( resolve( func( ...args ) ) );
+						return resolve_( resolve( func( ...args ) ) );
 					}
 					catch ( _ ) {
-						rej( reject( _ ) );
+						reject_( reject( _ ) );
 					}
 				} );
 			} );
 		}
 	}
+	/**
+	 * @param {"interactive" | "complete" | "DOMContentLoaded" | "load"} type - EventType or Key to wait to be dispatched or already registered
+	 * @returns {Promise<any[]>}
+	 */
 	static all( type ) {
-		return Promise.all( Wait.register()[type].map( function ( e ) {
-			return e();
-		} ) );
+		return Promise.all( Wait.register()[type].map( f => f() ) );
 	}
+	/**
+	 * @param {Number} time 
+	 * @returns {Promise<Number>} Await it to do whatever you want to do
+	 */
 	static time( time ) {
-		return new Promise( function ( resolve ) {
-			return setTimeout( resolve, time );
-		} );
+		return new Promise( resolve => setTimeout( resolve, time ) );
 	}
-	static race() {
-		return Promise.race( ...arguments );
+	/**
+	 * 
+	 * @param {Function} func - Function to wrap in a setTimeout function
+	 * @param {Number} timeout - timeout parameter for setTimeout
+	 * @param  {...any} funcArgs - Arguments to pass to func function
+	 * @returns {Number} Timeout ID
+	 */
+	static delay( func, timeout, ...funcArgs ) {
+		return setTimeout( func, timeout || 0, ...funcArgs );
 	}
-	static delay() {
-		const [func, timeout, ...args] = arguments;
-		return setTimeout( func, timeout || 0, ...args );
-	}
-	static async() {
-		const [func, ...args] = arguments;
+	/**
+	 * 
+	 * @param {Function} func 
+	 * @param  {...any} funcArgs 
+	 * @returns {Promise}
+	 */
+	static async( func, ...funcArgs ) {
 		return new Promise( function ( resolve, reject ) {
 			try {
-				return resolve( func( ...args ) );
+				resolve( func( ...funcArgs ) );
 			} catch ( _ ) {
-				return reject( _ );
+				reject( _ );
 			}
 		} );
 	}
-	static promiseDelay() {
-		const [func, timeout, ...args] = arguments;
+	/**
+	 * 
+	 * @param {Function} func 
+	 * @param {Number} timeout 
+	 * @param  {...any} funcArgs 
+	 * @returns {Promise}
+	 */
+	static promiseDelay( func, timeout, ...funcArgs ) {
 		return new Promise( function ( resolve, reject ) {
 			return setTimeout( function ( ...args ) {
 				try {
@@ -109,95 +138,114 @@ class Wait {
 				catch ( _ ) {
 					return reject( _ );
 				}
-			}, timeout, ...args );
+			}, timeout, ...funcArgs );
 		} );
 	}
-	static whileLoading() {
-		const [func, ...args] = arguments;
-		if ( document.readyState === 'loading' ) {
-			return func( ...args );
-		}
-	}
-	static interactive() {
-		const [func, ...args] = arguments;
+	/**
+	 * 
+	 * @param {Function} func 
+	 * @param  {...any} funcArgs 
+	 * @returns {Promise}
+	 */
+	static interactive( func, ...funcArgs ) {
 		return new Promise( function ( resolve, reject ) {
-			Wait.set( 'interactive', Object.assign( Object.create( null ), {
-				resolve, reject, func, args
-			} ) );
+			Wait.set( 'interactive', { resolve, reject, func, args: funcArgs } );
 		} );
 	}
-	static complete() {
-		const [func, ...args] = arguments;
+	/**
+	 * 
+	 * @param {Function} func 
+	 * @param  {...any} funcArgs 
+	 * @returns {Promise}
+	 */
+	static complete( func, ...funcArgs ) {
 		return new Promise( function ( resolve, reject ) {
-			Wait.set( 'complete', Object.assign( Object.create( null ), {
-				resolve, reject, func, args
-			} ) );
+			Wait.set( 'complete', { resolve, reject, func, args: funcArgs } );
 		} );
 	}
-	static DOMContentLoaded() {
-		const [func, ...args] = arguments;
+	/**
+	 * 
+	 * @param {Function} func 
+	 * @param  {...any} funcArgs 
+	 * @returns {Promise}
+	 */
+	static DOMContentLoaded( func, ...funcArgs ) {
 		return new Promise( function ( resolve, reject ) {
-			Wait.set( 'DOMContentLoaded', Object.assign( Object.create( null ), {
-				resolve, reject, func, args
-			} ) );
+			Wait.set( 'DOMContentLoaded', { resolve, reject, func, args: funcArgs } );
 		} );
 	}
-	static ready() {
-		const [func, ...args] = arguments;
+	/**
+	 * 
+	 * @param {Function} func 
+	 * @param  {...any} funcArgs 
+	 * @returns {Promise}
+	 */
+	static ready( func, ...funcArgs ) {
 		return new Promise( function ( resolve, reject ) {
-			Wait.set( 'complete', Object.assign( Object.create( null ), {
-				resolve, reject, func, args
-			} ) );
+			Wait.set( 'complete', { resolve, reject, func, args: funcArgs } );
 		} );
 	}
-	static load() {
-		const [func, ...args] = arguments;
+	/**
+	 * 
+	 * @param {Function} func 
+	 * @param  {...any} funcArgs 
+	 * @returns {Promise}
+	 */
+	static load( func, ...funcArgs ) {
 		return new Promise( function ( resolve, reject ) {
-			Wait.set( 'complete', Object.assign( Object.create( null ), {
-				resolve, reject, func, args
-			} ) );
+			Wait.set( 'complete', { resolve, reject, func, args: funcArgs } );
 		} );
 	}
 };
 
-export default class VariableManager {
+class VariableManager {
     constructor () {
         const gl = getGlobal();
         if ( !( 'VariableManager' in gl ) ) {
             gl.VariableManager = this;
-            this.map = Object.create( null );
-        }
+            this.map = {};
+		}
+		else if ( gl.VariableManager !== this ) {
+			throw new Error( 'You are allowed to instanciate only one VariableManager per page' );
+		}
         return gl.VariableManager;
 	}
-	
+	/**
+	 * @param {String} key - Key to look for to be replaced by object
+	 * @param {{
+	 *   exec: Function,
+	 *   parser: Object
+	 * }} object - Function and parser to call on item found thanks to key
+	 * @returns {void}
+	 */
     register( key, object ) {
         object = typeof object === 'object' ? object : {};
         const { exec, parser } = object;
-        if ( (key in this.map) || !( exec || parser ) ) {
-            return false;
-        }
-        this.map[key] = { exec, parser };
+		if ( ( key in this.map ) || !( exec || parser ) ) {
+			return false;
+		}
+		this.map[key] = { exec, parser };
 	}
 	
     async execute() {
         const body = document.body;
-
         const nodes = [body];
         const found = [];
-
-        while ( nodes.length > 0 ) {
-            const e = nodes.shift();
-            for ( const node of e.childNodes ) {
-                if ( [1, 11].includes( node.nodeType ) ) {
-                    nodes.unshift( node );
-                }
-                else if ( [3, 8].includes( node.nodeType ) ) {
-                    if ( ( /{{(.|\n|\r)*}}/g ).test( node.textContent ) ) {
-                        found.push( node.parentNode );
-                    }
-                }
-            }
-        }
+		while ( nodes.length > 0 ) {
+			const currentNode = nodes.shift();
+			const { length: l } = currentNode.childNodes.length;
+			for ( let i = 0; i < l; i += 1 ) {
+				const currentChild = currentNode.childNodes[i];
+				if ( [1, 11].includes( currentChild.nodeType ) ) {
+					nodes.unshift( currentChild );
+				}
+				else if ( [3, 8].includes( currentChild.nodeType ) ) {
+					if ( ( /{{(.|\n|\r)*}}/g ).test( currentChild.textContent ) ) {
+						found.push( currentChild.parentNode );
+					}
+				}
+			}
+		}
 
         for ( const fo of found ) {
             let html = fo.innerHTML;
@@ -267,7 +315,7 @@ export default class VariableManager {
                 }
             }
             return prev;
-        }, ( {} ) );
+        }, {} );
         return obj;
     }
     static execute() {
@@ -279,4 +327,4 @@ export default class VariableManager {
     }
 };
 
-export { Wait };
+export { VariableManager, Wait };
