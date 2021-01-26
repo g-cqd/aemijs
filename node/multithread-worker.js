@@ -46,7 +46,7 @@ class ExtenderWorkerHandler {
 	 */
 	addTypeListener( type, func, options = {} ) {
 		const { keepMessageEvent, propertyAccessor } = options;
-		this.typeListeners[type] = function ( id, data, messageEvent ) {
+		this.typeListeners[type] = ( id, data, messageEvent ) => {
 			const _data = propertyAccessor ? data[propertyAccessor] : data;
 			const _args = keepMessageEvent ? [messageEvent, _data] : [_data];
 			const _value = func( ..._args );
