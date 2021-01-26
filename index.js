@@ -9,7 +9,7 @@ if ( typeof document !== 'undefined' ) {
         promise: true,
         name: 'super-worker',
         importScripts: [
-            document.currentScript.baseURI + 'aemi.min.js',
+            document.currentScript.baseURI + 'aemi.browser.js',
             document.currentScript.src
         ]
     } );

@@ -124,20 +124,19 @@ function data( element, dataset, value ) {
  * @returns {HTLMElement}
  */
 function ecs( ...args ) {
-    if ( args.length === 0 ) {
-        return document.createElement( 'div' );
-    }
-    args = args.filter( item => !!item );
     const { length } = args;
+    args = args.filter( item => !!item );
     if ( length === 0 ) {
         return document.createElement( 'div' );
     }
     if ( length !== 1 ) {
         const wrapper = document.createElement( 'div' );
-        wrapper.append( ...( args.map( ecs ) ) );
+        for ( let i = 0; i < length; i += 1 ) {
+            wrapper.appendChild( ecs( args[i] ) );
+        }
         return wrapper;
     }
-    let current = args.pop();
+    let current = args[0];
     if ( current instanceof Element ) {
         return current;
     }

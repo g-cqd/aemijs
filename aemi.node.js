@@ -6,33 +6,33 @@ const {
     ObjectForEach,
     ObjectMap,
     newUID
-} = require( './utils.js' );
+} = require( './node/utils.js' );
 
 const {
     Dataset,
     DatasetEncoder,
     DatasetHeader
-} = require( './dataset.js' );
+} = require( './node/dataset.js' );
 
 const {
     IArray
-} = require( './immutable.js' );
+} = require( './node/immutable.js' );
 
 const {
     ImageLoader
-} = require( './loader.js' );
+} = require( './node/loader.js' );
 
 const {
     Easing
-} = require( './math.js' );
+} = require( './node/math.js' );
 
 const {
     ExtendedWorker
-} = require( './multithread.js' );
+} = require( './node/multithread.js' );
 
 const {
     Benchmark
-} = require( './perf.js' );
+} = require( './node/perf.js' );
 
 module.exports = {
     getGlobal,

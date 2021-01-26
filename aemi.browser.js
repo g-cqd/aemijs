@@ -29,7 +29,7 @@ function isNode() {
  * @returns {Boolean}
  */
 function isWorker() {
-    return typeof self !== 'undefined' && getGlobal() === self;
+    return ( typeof self !== 'undefined' && getGlobal() === self ) || ( isNode() && ( typeof Worker !== 'undefined' || typeof parentPort !== 'undefined' ) );
 }
 
 /**
@@ -99,8 +99,15 @@ function newUID( length = 16 ) {
             return String.fromCharCode( 97 + mod - 36 );
         }
     }
-    const src = new Uint8Array( length );
-    window.crypto.getRandomValues( src );
+    let src;
+    if ( isBrowser() || ( ( !isNode() ) && isWorker() ) ) {
+        src = new Uint8Array( length );
+        getGlobal().crypto.getRandomValues( src );
+    }
+    else if ( isNode() ) {
+        const crypto = require( 'crypto' );
+        src = crypto.randomBytes( length );
+    }
     const res = Array( length )
         .fill( 0 )
         .map( ( _, i ) => intToChar( src[i] ) )
@@ -231,20 +238,19 @@ function data( element, dataset, value ) {
  * @returns {HTLMElement}
  */
 function ecs( ...args ) {
-    if ( args.length === 0 ) {
-        return document.createElement( 'div' );
-    }
-    args = args.filter( item => !!item );
     const { length } = args;
+    args = args.filter( item => !!item );
     if ( length === 0 ) {
         return document.createElement( 'div' );
     }
     if ( length !== 1 ) {
         const wrapper = document.createElement( 'div' );
-        wrapper.append( ...( args.map( ecs ) ) );
+        for ( let i = 0; i < length; i += 1 ) {
+            wrapper.appendChild( ecs( args[i] ) );
+        }
         return wrapper;
     }
-    let current = args.pop();
+    let current = args[0];
     if ( current instanceof Element ) {
         return current;
     }
@@ -1652,7 +1658,12 @@ class Benchmark {
      * @param {{logging:Boolean}} [options] - Options passed to Benchmark
      */
     constructor ( options = {} ) {
-        this.perf = getGlobal().performance;
+        if ( isBrowser() ) {
+            this.perf = getGlobal().performance;
+        }
+        else if ( isNode() ) {
+            ( { performance: this.perf } = require( 'perf_hooks' ) );
+        }
         this.options = {
             _logging: options.logging || false,
             _iterations: undefined,
@@ -1668,10 +1679,7 @@ class Benchmark {
      * @returns {String}
      */
     get uid() {
-        const numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        return ( new Array( 10 ).fill( null ) )
-            .map( ( _0, _1, { length } ) => numbers[Math.floor( Math.random() * length )] )
-            .join( '' );
+        return newUID( 10 );
     }
     /**
      * @returns {String}
@@ -1857,7 +1865,7 @@ class ExtendedWorker {
      * @returns {String} ObjectURL from Function String
      */
     static prepareFromString( WorkerString, WorkerOptions ) {
-        const scripts = [`${window.location.href}src/navigator.worker.js`];
+        const scripts = [];
         if ( typeof WorkerOptions === 'object' ) {
             if ( 'localImports' in WorkerOptions ) {
                 if ( typeof WorkerOptions.localImports === 'string' ) {
@@ -1877,7 +1885,7 @@ class ExtendedWorker {
             }
         }
         if ( typeof WorkerString === 'string' ) {
-            const WorkerBody = `importScripts('${scripts.join( "','" )}');\n(${WorkerString})();`;
+            const WorkerBody = `${scripts.length > 0 ? `importScripts('${scripts.join( "','" )}');\n` : ''}(${WorkerString})();`;
             const WorkerBlob = new Blob( [WorkerBody], { type: 'text/javascript' } );
             return URL.createObjectURL( WorkerBlob );
         }
@@ -1910,7 +1918,7 @@ class ExtendedWorker {
      * @returns {ExtendedWorker} ExtendedWorker from function string
      */
     static createFromString( WorkerString, WorkerOptions ) {
-        const scripts = [`${window.location.href}src/navigator.worker.js`];
+        const scripts = [];
         if ( typeof WorkerOptions === 'object' ) {
             if ( 'localImports' in WorkerOptions ) {
                 if ( typeof WorkerOptions.localImports === 'string' ) {
@@ -1930,7 +1938,7 @@ class ExtendedWorker {
             }
         }
         if ( typeof WorkerString === 'string' ) {
-            const WorkerBody = `importScripts('${scripts.join( "','" )}');\n(${WorkerString})();`;
+            const WorkerBody = `${scripts.length > 0 ? `importScripts('${scripts.join( "','" )}');\n` : ''}(${WorkerString})();`;
             const WorkerBlob = new Blob( [WorkerBody], { type: 'text/javascript' } );
             return new ExtendedWorker( URL.createObjectURL( WorkerBlob ), WorkerOptions );
         }
@@ -2444,15 +2452,20 @@ class Dataset {
         return fileCells2d.filter( row => row.length > 0 && row.some( cell => !!cell === true ) );
     }
     /**
-     * @param {String|ArrayBuffer} fileContent
+     * @param {String|ArrayBuffer|Buffer} fileContent
      * @returns {Array<String[]>}
      */
     static readFile( fileContent ) {
         /** @type {String} */
         let fileContentString;
-        if ( fileContent instanceof ArrayBuffer ) {
-            const decoder = new TextDecoder( 'utf-8' );
-            fileContentString = decoder.decode( fileContent );
+        if ( typeof fileContent !== 'string' ) {
+            if ( fileContent instanceof ArrayBuffer ) {
+                const decoder = new TextDecoder( 'utf-8' );
+                fileContentString = decoder.decode( fileContent );
+            }
+            else if ( typeof Buffer !== 'undefined' && fileContent instanceof Buffer ) {
+                fileContentString = fileContent.toString( 'utf-8' );
+            }
         }
         return Dataset._getNotEmptyLines(
             Dataset._getCells( Dataset._getLines( fileContentString || fileContent ) )
@@ -2604,20 +2617,58 @@ class Dataset {
      * @returns {Dataset}
      */
     static load( filePath, options, requestOptions ) {
-        return new Promise( ( resolve, reject ) => {
-            fetch( filePath, requestOptions )
-                .then( response => {
-                    if ( response.status === 200 && response.ok ) {
-                        response
-                            .text()
-                            .then( fileContent => resolve( new Dataset( fileContent, options ) ) )
-                            .catch( reject );
-                    } else {
-                        reject( response );
+        if ( isBrowser() ) {
+            return new Promise( ( resolve, reject ) => {
+                fetch( filePath, requestOptions )
+                    .then( response => {
+                        if ( response.status === 200 && response.ok ) {
+                            response
+                                .text()
+                                .then( fileContent => resolve( new Dataset( fileContent, options ) ) )
+                                .catch( reject );
+                        } else {
+                            reject( response );
+                        }
+                    } )
+                    .catch( reject );
+            } );
+        }
+        else if ( isNode() ) {
+            return new Promise( ( resolve, reject ) => {
+                const fs = require( 'fs' );
+                fs.readFile( filePath, { encoding: 'utf-8', flag: 'r' }, ( err, fileContent ) => {
+                    if ( err ) {
+                        reject( err );
                     }
-                } )
-                .catch( reject );
-        } );
+                    else {
+                        resolve( new Dataset( fileContent, options ) );
+                    }
+                } );
+            } );
+        }
+    }
+    /**
+     * @param {String|RequestInfo} filePath
+     * @param {{encoders:String[],excluded:String|String[],types:{[String]:String|Function}}} [options]
+     * @returns {Dataset}
+     */
+    static loadExternal( filePath, options ) {
+        if ( isBrowser() ) {
+            return Dataset.load( filePath, options );
+        }
+        else if ( isNode() ) {
+            const https = require( 'https' );
+            const fs = require( 'fs' );
+            return new Promise( ( resolve, reject ) => {
+                https.get( filePath, response => {
+                    response.setEncoding( 'utf-8' );
+                    let fileContent = '';
+                    response.on( 'data', chunk => fileContent += chunk );
+                    response.on( 'end', () => resolve( new Dataset( fileContent, options ) ) );
+                    response.on( 'error', error => reject( error ) );
+                } );
+            } );
+        }
     }
     /**
      * @param {String|ArrayBuffer} fileContent 

@@ -1,12 +1,12 @@
 import {
     MarkdownParser,
     VariableManager
-} from './content.js';
+} from './module/content.js';
 import {
     Dataset,
     DatasetEncoder,
     DatasetHeader
-} from './dataset.js';
+} from './module/dataset.js';
 import {
     addClass,
     attr,
@@ -16,30 +16,30 @@ import {
     hasClass,
     removeClass,
     toggleClass
-} from './dom.js';
+} from './module/dom.js';
 import {
     IArray
-} from './immutable.js';
+} from './module/immutable.js';
 import {
     ImageLoader,
     Wait
-} from './loading.js';
+} from './module/loading.js';
 import {
     Easing
-} from './math.js';
+} from './module/math.js';
 import {
     smoothScrollTo
-} from './move.js';
+} from './module/move.js';
 import {
     ExtendedWorker
-} from './multithread.js';
+} from './module/multithread.js';
 import {
     Cookies,
     WebPTest
-} from './navigator.js';
+} from './module/navigator.js';
 import {
     Benchmark
-} from './perf.js';
+} from './module/perf.js';
 import {
     getGlobal,
     isBrowser,
@@ -48,7 +48,7 @@ import {
     newUID,
     ObjectForEach,
     ObjectMap
-} from './utils.js';
+} from './module/utils.js';
 
 
 
