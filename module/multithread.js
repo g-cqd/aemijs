@@ -1,137 +1,6 @@
-import { getGlobal, newIdentifier } from './utils.js';
+/* eslint-env browser */
 
-const Cookies = {
-	/**
-	 * @returns {String} Datetime One Year Later
-	 */
-	expires: function () {
-		const newDate = new Date();
-		const year = 365.244 * 24 * 3600 * 1000;
-		newDate.setTime( newDate.getTime() + year );
-		return newDate.toGMTString();
-	},
-	/**
-	 * @param {String} cookieName 
-	 * @returns {String}
-	 */
-	get: function ( cookieName ) {
-		return new Map(
-			decodeURIComponent( document.cookie )
-				.split( /;/ )
-				.map( str => str.trim().split( /=/ ) )
-		).get( cookieName );
-	},
-	/**
-	 * @param {String} cookieName 
-	 * @returns {Boolean}
-	 */
-	has: function ( cookieName ) {
-		return new Map(
-			decodeURIComponent( document.cookie )
-				.split( /;/ )
-				.map( str => str.trim().split( /=/ ) )
-		).has( cookieName );
-	},
-	/**
-	 * @param {String} cookieName 
-	 * @param {String|Number|Boolean} cookieValue 
-	 * @param {{
-	 *    expiration?: Number,
-	 *    sameSite?: 'Strict' | 'Lax' | 'None',
-	 *    path?: String
-	 * }} [options] 
-	 */
-	set: function ( cookieName, cookieValue, options = {} ) {
-		let { expiration, sameSite, path } = options;
-		const cookieString = [`${cookieName}=${encodeURIComponent( cookieValue )}`];
-		cookieString.push( `expires=${!expiration ? this.expires() : expiration}` );
-		cookieString.push( `path=${path || '/'}` );
-		cookieString.push( `SameSite=${sameSite || 'None'};Secure` );
-		document.cookie = cookieString.join(';');
-	},
-
-	/**
-	 * @param {String} cookieName 
-	 */
-	delete: function ( cookieName ) {
-		document.cookie = `${cookieName}=;expires=0;`;
-	}
-};
-
-class WebPTest {
-	constructor () { }
-	static get data() {
-		return [
-			[
-				'lossy',
-				'UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA'
-			],
-			[
-				'lossless',
-				'UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA=='
-			],
-			[
-				'alpha',
-				'UklGRkoAAABXRUJQVlA4WAoAAAAQAAAAAAAAAAAAQUxQSAwAAAARBxAR/Q9ERP8DAABWUDggGAAAABQBAJ0BKgEAAQAAAP4AAA3AAP7mtQAAAA=='
-			],
-			[
-				'animation',
-				'UklGRlIAAABXRUJQVlA4WAoAAAASAAAAAAAAAAAAQU5JTQYAAAD/////AABBTk1GJgAAAAAAAAAAAAAAAAAAAGQAAABWUDhMDQAAAC8AAAAQBxAREYiI/gcA'
-			]
-		];
-	}
-	static save( features ) {
-		const gl = getGlobal();
-		gl.WebPTestResult = features.reduce( function ( acc, [feature, bool] ) {
-			if ( !( feature in acc ) ) {
-				acc[feature] = bool;
-				return acc;
-			}
-		}, Object.create( null ) );
-		return gl.WebPTestResult;
-	}
-	static imageLoading( data, feature ) {
-		return new Promise( function ( resolve ) {
-			const img = new Image();
-			img.onload = function () {
-				resolve( [feature, img.width > 0 && img.height > 0] );
-			};
-			img.onerror = function () {
-				resolve( [feature, false] );
-			};
-			img.src = data;
-		} );
-	}
-	static test() {
-		const gl = getGlobal();
-		return new Promise( function ( resolve ) {
-			if ( 'WebPTestResult' in gl ) {
-				resolve( gl.WebPTestResult );
-			}
-			else {
-				Promise.all(
-					WebPTest.data.map( function ( [feature, data] ) {
-						return WebPTest.imageLoading( `data:image/webp;base64,${data}`, feature );
-					} )
-				).then( function ( response ) {
-					resolve( WebPTest.save( response ) );
-				} );
-			}
-		} );
-	}
-	static get passed() {
-		const gl = getGlobal();
-		let wtr;
-		return new Promise( async function ( resolve ) {
-			if ( 'WebPTestResult' in gl ) {
-				wtr = gl.WebPTestResult;
-			} else {
-				wtr = await WebPTest.test();
-			}
-			resolve( wtr.lossy && wtr.lossless && wtr.alpha && wtr.animation );
-		} );
-	}
-};
+import { getGlobal, newUID } from './utils.js';
 
 class ExtendedWorker {
 	/**
@@ -169,7 +38,7 @@ class ExtendedWorker {
 	 * @returns {String} ObjectURL from Function String
 	 */
 	static prepareFromString( WorkerString, WorkerOptions ) {
-		const scripts = [`${window.location.href}src/navigator.worker.js`];
+		const scripts = [];
 		if ( typeof WorkerOptions === 'object' ) {
 			if ( 'localImports' in WorkerOptions ) {
 				if ( typeof WorkerOptions.localImports === 'string' ) {
@@ -189,7 +58,7 @@ class ExtendedWorker {
 			}
 		}
 		if ( typeof WorkerString === 'string' ) {
-			const WorkerBody = `importScripts('${scripts.join( "','" )}');\n(${WorkerString})();`;
+			const WorkerBody = `${scripts.length > 0 ? `importScripts('${scripts.join( "','" )}');\n` : ''}(${WorkerString})();`;
 			const WorkerBlob = new Blob( [WorkerBody], { type: 'text/javascript' } );
 			return URL.createObjectURL( WorkerBlob );
 		}
@@ -222,7 +91,7 @@ class ExtendedWorker {
 	 * @returns {ExtendedWorker} ExtendedWorker from function string
 	 */
 	static createFromString( WorkerString, WorkerOptions ) {
-		const scripts = [`${window.location.href}src/navigator.worker.js`];
+		const scripts = [];
 		if ( typeof WorkerOptions === 'object' ) {
 			if ( 'localImports' in WorkerOptions ) {
 				if ( typeof WorkerOptions.localImports === 'string' ) {
@@ -242,7 +111,7 @@ class ExtendedWorker {
 			}
 		}
 		if ( typeof WorkerString === 'string' ) {
-			const WorkerBody = `importScripts('${scripts.join( "','" )}');\n(${WorkerString})();`;
+			const WorkerBody = `${scripts.length > 0 ? `importScripts('${scripts.join( "','" )}');\n` : ''}(${WorkerString})();`;
 			const WorkerBlob = new Blob( [WorkerBody], { type: 'text/javascript' } );
 			return new ExtendedWorker( URL.createObjectURL( WorkerBlob ), WorkerOptions );
 		}
@@ -321,7 +190,7 @@ class ExtendedWorker {
 	}
 	/**
 	 * Ensure globalThis variable can handle ExtendedWorker promises
-	 * @returns {{resolves:{String:Function},rejects:{String:Function}}}
+	 * @returns {{resolves:{[String]:Function},rejects:{[String]:Function}}}
 	 */
 	static assert() {
 		const self = getGlobal();
@@ -341,7 +210,7 @@ class ExtendedWorker {
 	 */
 	static postMessage( messagePayload, worker ) {
 		if ( worker.promise ) {
-			const messageId = newIdentifier();
+			const messageId = newUID();
 			const [message, transfer] = messagePayload;
 			const payload = { id: messageId, data: message };
 			return new Promise( function ( resolve, reject ) {
@@ -378,13 +247,13 @@ class ExtendedWorker {
 		ExtendedWorker.delete( id );
 	}
 	/**
-	 * @returns {{String:Function}}
+	 * @returns {{[String]:Function}}
 	 */
 	static get resolves() {
 		return ExtendedWorker.assert().resolves;
 	}
 	/**
-	 * @returns {{String:Function}}
+	 * @returns {{[String]:Function}}
 	 */
 	static get rejects() {
 		return ExtendedWorker.assert().rejects;
@@ -397,96 +266,7 @@ class ExtendedWorker {
 		delete ExtendedWorker.resolves[id];
 		delete ExtendedWorker.rejects[id];
 	}
-};
-
-class ImageLoader {
-	constructor () {
-		this.worker = new ExtendedWorker(
-			function () {
-				self.onmessage = function ( event ) {
-					url( event.data.data.url, event.data.id ).then(
-						function ( [id, result] ) {
-							self.postMessage( {
-								id: id,
-								data: { url: result || '' }
-							} );
-						}
-					);
-				};
-				function url( url, id, options ) {
-					options = !!options && typeof options === 'object' ? options : Object.create( null );
-					return new Promise( async function ( resolve, reject ) {
-						fetch( url, {
-							method: 'GET',
-							mode: 'cors',
-							credentials: 'include',
-							cache: 'default',
-							...options
-						} ).then( async function ( response ) {
-							if ( response.status === 200 ) {
-								try {
-									const blob = await response.blob();
-									return resolve( [id, URL.createObjectURL( blob )] );
-								} catch ( _ ) {
-									console.error( _ );
-									return reject( [id, ''] );
-								}
-							}
-							console.error( response );
-							return reject( [id, ''] );
-						} ).catch( function ( _ ) {
-							console.error( _ );
-							return reject( [id, ''] );
-						} );
-					} );
-				}
-			},
-			{ promise: true }
-		);
-	}
-
-	async load( options ) {
-		options = options || Object.create( null );
-		const { src, webp } = options;
-		let res;
-		if ( !!webp && typeof webp === 'string' ) {
-			const _ = await WebPTest.passed;
-			if ( _ ) {
-				res = ( await this.worker.postMessage( { url: webp } ) ).url;
-			} else {
-				res = ( await this.worker.postMessage( { url: src } ) ).url;
-			}
-		} else {
-			res = ( await this.worker.postMessage( { url: src } ) ).url;
-		}
-		return res;
-	}
-
-	static async load( options ) {
-		const gl = getGlobal();
-		if ( !( 'ImageLoader' in gl ) ) {
-			gl.ImageLoader = new ImageLoader();
-		}
-		return await gl.ImageLoader.load( options );
-	}
-
-	terminate() {
-		this.worker.terminate();
-	}
-
-	static terminate() {
-		const gl = getGlobal();
-		if ( 'ImageLoader' in gl ) {
-			gl.ImageLoader.terminate();
-			delete gl.ImageLoader;
-		}
-	}
 }
 
-export {
-    Cookies,
-    WebPTest,
-    ExtendedWorker,
-    ImageLoader
-};
+export { ExtendedWorker };
 

@@ -1,35 +1,43 @@
-import { getGlobal, isBrowser, isNode } from './utils.js';
+/* eslint-env browser */
+
+import { getGlobal, newUID } from './utils.js';
 /**
  * Benchmark JavaScript Code
  */
 class Benchmark {
     /**
-     * @param {{logging:Boolean}} options - Options passed to Benchmark
+     * @param {{logging:Boolean}} [options] - Options passed to Benchmark
      */
     constructor ( options = {} ) {
-        if ( isNode() ) {
-            this.perf = require( 'perf_hooks' ).performance;
-        }
-        else if ( isBrowser() ) {
-            this.perf = getGlobal().performance;
-        }
+        this.perf = getGlobal().performance;
         this.options = {
             _logging: options.logging || false,
-            _iterations: undefined
+            _iterations: undefined,
+            _last: undefined
         };
         this.match = {};
         this.metrics = new Map();
         this.pool = new Map();
+        this.testPool = new Map();
         this.ticks = [];
     }
     /**
      * @returns {String}
      */
-    get uuid() {
-        const numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        return ( new Array( 10 ).fill( null ) )
-            .map( ( _0, _1, { length } ) => numbers[Math.floor( Math.random() * length )] )
-            .join( '' );
+    get uid() {
+        return newUID( 10 );
+    }
+    /**
+     * @returns {String}
+     */
+    set last( value ) {
+        return this.options._last = value;
+    }
+    /**
+     * @returns {String}
+     */
+    get last() {
+        return this.options._last;
     }
     /**
      * @returns {Boolean}
@@ -58,30 +66,63 @@ class Benchmark {
      * @returns {Benchmark}
      */
     add( label, func, ...args ) {
-        const { uuid } = this;
-        this.match[uuid] = label;
-        this.pool.set( uuid, () => {
+        const { uid } = this;
+        this.last = uid;
+        this.match[uid] = label;
+        this.pool.set( uid, () => {
             let end;
-            let elapsed;
+            let elapsed = 0;
             let i = 0;
-            let start = performance.now();
-            do {
-                func( ...args );
-            } while ( ( i++, end = performance.now() ) < start + 5000 );
-            elapsed = end - start;
+            let test = this.testPool.get( uid );
+            let start;
+            if ( test ) {
+                do {
+                    start = this.perf.now();
+                    const result = func( ...args );
+                    elapsed += this.perf.now() - start;
+                    if ( !test( result ) ) {
+                        console.group( `Test Failed - ${label}` );
+                        console.error( 'Test Function', test );
+                        console.error( 'Tested Result', result );
+                        console.groupEnd( `Test Failed - ${label}` );
+                        throw new Error( 'Test failed.' );
+                    }
+                } while ( ( i++, elapsed < 5000 ) );
+            }
+            else {
+                start = this.perf.now();
+                do {
+                    func( ...args );
+                } while ( ( i++, end = this.perf.now() ) < start + 5000 );
+                elapsed = end - start;
+            }
             const ops = i / ( elapsed / 1000 );
             const result = { ops, elapsed, iterations: i };
             console.log( `Func ${label}\n\t> ${ops.toFixed( 3 )} op/s\n\t> ${i} op` );
-            this.metrics.set( uuid, result );
+            this.metrics.set( uid, result );
             return result;
         } );
+        return this;
+    }
+    /**
+     * @callback callback
+     * @param {any} result
+     * @returns {Boolean}
+     */
+    /**
+     * @param {callback} func 
+     */
+    test( func ) {
+        const { last: uid } = this;
+        this.testPool.set( uid, func );
+        this.last = undefined;
         return this;
     }
     /**
      * @returns {void}
      */
     start() {
-        const now = performance.now();
+        const now = this.perf.now();
         if ( this.logging ) {
             console.warn( `Started ${now} ms after page load.` );
         }
@@ -91,7 +132,7 @@ class Benchmark {
      * @returns {Number}
      */
     tick() {
-        const now = performance.now();
+        const now = this.perf.now();
         const elapsed = now - this.ticks[this.ticks.length - 1];
         if ( this.logging ) {
             console.log( `Lap : ${elapsed} ms` );
@@ -103,7 +144,7 @@ class Benchmark {
      * @returns {Number}
      */
     stop() {
-        const now = performance.now();
+        const now = this.perf.now();
         const lastLap = now - this.ticks[this.ticks.length - 1];
         const elapsed = now - this.ticks[0];
         if ( this.logging ) {

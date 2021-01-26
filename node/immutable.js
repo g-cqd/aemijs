@@ -11,7 +11,7 @@ class IArray {
                 return Object.freeze( Object.setPrototypeOf( thisArg, IArray.prototype ) );
             }
             else {
-                throw new Error( 'Please use IArray.from' );
+                throw new TypeError( 'Please use IArray.from' );
             }
         }
         else {
@@ -555,4 +555,4 @@ class IArray {
     }
 };
 
-export { IArray };
+module.exports = { IArray };

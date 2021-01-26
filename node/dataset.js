@@ -1,19 +1,15 @@
-/* eslint-env browser,worker */
+/* eslint-env node */
 
-/**
- * @method getEncoded
- * @method getDecoded
- */
 class DatasetEncoder {
 	/**
-     * @param key {String}
+     * @param {String} key
      * @returns {DatasetEncoder}
      */
 	constructor () {
 		this.values = [];
 	}
 	/**
-     * @param value {any}
+     * @param {any} value
      * @returns {Number}
      */
 	getEncoded( value ) {
@@ -26,7 +22,7 @@ class DatasetEncoder {
 		}
 	}
 	/**
-     * @param encodedIndex {Number}
+     * @param {Number} encodedIndex
      * @returns {any}
      */
 	getDecoded( encodedIndex ) {
@@ -37,7 +33,6 @@ class DatasetEncoder {
 		}
 	}
 	/**
-	 * 
 	 * @param {Number} value 
 	 * @returns {Array<Number>}
 	 */
@@ -51,7 +46,6 @@ class DatasetEncoder {
 		throw new Error();
 	}
 	/**
-	 * 
 	 * @param {Number} index 
 	 * @returns {Array<0|1>}
 	 */
@@ -69,149 +63,158 @@ class DatasetEncoder {
 
 class DatasetHeader {
 	/**
-     * @param array {String[]}
-     * @param options {{types:{String:String|Function}}}
+     * @param {String[]} array
+     * @param {{types:{[String]:String|Function}}} [options]
      */
-	constructor ( array, options ) {
-		/** @type {Map<Number,String>} */
-		this.keys = new Map();
-		/** @type {Map<String,Function>} */
-		this.types = new Map();
-		/** @type {Map<String,Number>} */
-		this.indexes = new Map();
-		/** @type {Map<String,DatasetEncoder>} */
-		this.encoders = new Map();
+    constructor ( array, options ) {
+        /** @type {Map<Number,String>} */
+        this.keys = new Map();
+        /** @type {Map<String,Function>} */
+        this.types = new Map();
+        /** @type {Map<String,Number>} */
+        this.indexes = new Map();
+        /** @type {Map<String,DatasetEncoder>} */
+        this.encoders = new Map();
 
-		this.nextIndex = 0;
+        this.nextIndex = 0;
 
-		if ( array ) {
-			this.parseFromArray( array, options );
-		}
-	}
+        if ( array ) {
+            this.parseFromArray( array, options );
+        }
+    }
+    /**
+     * @returns {String[]}
+     */
 	get columns() {
 		return [...this.indexes.keys()];
 	}
 	/**
-     * @param key {String}
+     * @param {String} key
      * @returns {{key:String,index:Number,type?:Function,encoder?:DatasetEncoder}}
      */
 	getColumnByKey( key ) {
-		return this.indexes.has( key ) ? Object.assign( Object.create( null ), {
-			key: key,
-			index: this.indexes.get( key ),
-			... this.types.has( key ) ? { type: this.types.get( key ) } : {} ,
-			... this.encoders.has( key ) ? { encoder: this.encoders.get( key ) } : {} 
-		} ) : undefined;
+		if ( this.indexes.has( key ) ) {
+            return {
+                key: key,
+                index: this.indexes.get( key ),
+                ... this.types.has( key ) ? { type: this.types.get( key ) } : {},
+                ... this.encoders.has( key ) ? { encoder: this.encoders.get( key ) } : {}
+            };
+        }
+        else {
+            return undefined;
+        }
 	}
 	/**
-     * @param index {Number}
+     * @param {Number} index
      * @returns {{key:String,index:Number,type?:Function,encoder?:DatasetEncoder}}
      */
 	getColumnByIndex( index ) {
 		if ( this.keys.has( index ) ) {
 			const key = this.keys.get( index );
-			return Object.assign( Object.create( null ), {
+			return {
 				key: key,
 				index: index,
 				... this.types.has( key ) ? { type: this.types.get( key ) } : {} ,
 				... this.encoders.has( key ) ? { encoder: this.encoders.get( key ) } : {} 
-			} );
+			};
 		} else {
 			return undefined;
 		}
 	}
 	/**
-     * @param index {Number}
+     * @param {Number} index
      * @returns {String}
      */
 	getColumnKeyByColumnIndex( index ) {
 		return this.keys.get( index );
 	}
 	/**
-     * @param key {String}
+     * @param {String} key
      * @returns {Number}
      */
 	getColumnIndexByColumnKey( key ) {
 		return this.indexes.get( key );
 	}
 	/**
-     * @param key {String}
-     * @param encoder {Map<Number,any>}
+     * @param {String} key
+     * @return {DatasetEncoder}
      */
-	registerColumnEncoderByColumnKey( key ) {
-		const encoder = new DatasetEncoder( key );
-		this.encoders.set( key, encoder );
-		return encoder;
-	}
-	/**
-     * @param key {String}
+    registerColumnEncoderByColumnKey( key ) {
+        const encoder = new DatasetEncoder( key );
+        this.encoders.set( key, encoder );
+        return encoder;
+    }
+    /**
+     * @param {String} key
      * @returns {DatasetEncoder}
      */
-	getColumnEncoderByColumnKey( key ) {
-		return this.encoders.get( key );
-	}
-	/**
-     * @param index {Number}
+    getColumnEncoderByColumnKey( key ) {
+        return this.encoders.get( key );
+    }
+    /**
+     * @param {Number} index
+     * @returns {DatasetEncoder}
      */
-	registerColumnEncoderByColumnIndex( index ) {
-		const key = this.keys.get( index );
-		const encoder = new DatasetEncoder( key );
-		this.encoders.set( key, encoder );
-		return encoder;
-	}
+    registerColumnEncoderByColumnIndex( index ) {
+        const key = this.keys.get( index );
+        const encoder = new DatasetEncoder( key );
+        this.encoders.set( key, encoder );
+        return encoder;
+    }
 	/**
-     * @param index {Number}
+     * @param {Number} index
      * @returns {DatasetEncoder}
      */
 	getColumnEncoderByColumnIndex( index ) {
 		return this.encoders.get( this.keys.get( index ) );
 	}
 	/**
-     * @param key {String}
+     * @param {String} key
      * @returns {Function}
      */
 	getColumnTypeByColumnKey( key ) {
 		return this.types.get( key );
 	}
 	/**
-     * @param key {String}
-     * @param type {String|Function}
+     * @param {String} key
+     * @param {String|Function} type
      */
 	setColumnTypeByColumnKey( key, type ) {
 		this.types.set( key, Dataset.parseType( type ) );
 	}
 	/**
-     * @param index {Number}
+     * @param {Number} index
      * @returns {Function}
      */
 	getColumnTypeByColumnIndex( index ) {
 		return this.types.get( this.keys.get( index ) );
 	}
 	/**
-     * @param index {Number}
-     * @param type {String|Function}
+     * @param {Number} index
+     * @param {String|Function} type
      */
 	setColumnTypeByColumnIndex( index, type ) {
 		this.types.set( this.keys.get( index ), Dataset.parseType( type ) );
 	}
 	/**
-     * @param key {String}
+     * @param {String} key
      * @returns {Boolean}
      */
 	hasColumn( key ) {
 		return this.indexes.has( key );
 	}
 	/**
-     * @param index {Number}
+     * @param {Number} index
      * @returns {Boolean}
      */
 	doesIndexExist( index ) {
 		return this.keys.has( index );
 	}
 	/**
-     * @param key {String}
-     * @param type {String|Function}
-     * @param toBeEncoded {Boolean}
+     * @param {String} key
+     * @param {String|Function} type
+     * @param {Boolean} [toBeEncoded]
      */
 	addColumn( key, type, tobeEncoded = false ) {
 		const index = this.nextIndex++;
@@ -223,7 +226,7 @@ class DatasetHeader {
 		}
 	}
 	/**
-     * @param keys {String[]}
+     * @param {String[]} keys
      * @returns {Number[]}
      */
 	removeColumns( keys ) {
@@ -253,24 +256,24 @@ class DatasetHeader {
 		return oldIndexes;
 	}
 	/**
-     * @param array {String[]}
-     * @param options {{types:{String:String|Function},encoders:String|String[]}}
+     * @param {String[]} array
+     * @param {{types:{[String]:String|Function},encoders:String|String[]}} [options]
      * @returns {DatasetHeader}
      */
-	parseFromArray( array, options ) {
-		const { types = {}, encoders = [] } =  options || {} ;
+	parseFromArray( array, options = {} ) {
+		const { types = {}, encoders = [] } =  options;
 		for ( const key of array ) {
 			this.addColumn( key, types[key], encoders.includes( key ) );
 		}
 		this.nextIndex = array.length;
 	}
 	/**
-     * @param array {String[]}
-     * @param options {{types:{String:String|Function},encoders:String|String[]}}
+     * @param {String[]} array
+     * @param {{types:{[String]:String|Function},encoders:String|String[]}} [options]
      * @returns {DatasetHeader}
      */
-	static parseFromArray( array, options ) {
-		const { types = {}, encoders = [] } =  options || {} ;
+	static parseFromArray( array, options = {} ) {
+		const { types = {}, encoders = [] } =  options;
 		const instance = new DatasetHeader();
 		for ( const key of array ) {
 			instance.addColumn( key, types[key], encoders.includes( key ) );
@@ -281,6 +284,11 @@ class DatasetHeader {
 }
 
 class Dataset {
+    /**
+     * @param {Array} elements 
+     * @param {Boolean} [fundamental] 
+     * @returns {void}
+     */
 	static log( elements, fundamental = true ) {
 		console.log( `\n<-- ${elements.length} ROWS -->` );
 		if ( fundamental ) {
@@ -329,47 +337,56 @@ class Dataset {
 		console.log(`<-- ${elements.length} ROWS -->\n` );
 	}
 	/**
-     * @param fileContentString {String}
+     * @param {String} fileContentString
      * @returns {String[]}
      */
 	static _getLines( fileContentString ) {
 		return fileContentString.split( /\n/g );
 	}
 	/**
-     * @param fileRowsStrings {String[]}
+     * @param {String[]} fileRowsStrings
      * @returns {Array<String[]>}
      */
 	static _getCells( fileRowsStrings ) {
 		return fileRowsStrings.map( row => row.replace( /\r/g, '' ).split( /,/g ).map( cell => cell.trim() ) );
 	}
 	/**
-     * @param fileCells2d {Array<String[]>}
+     * @param {Array<String[]>} fileCells2d
      * @returns {Array<String[]>}
      */
 	static _getNotEmptyLines( fileCells2d ) {
 		return fileCells2d.filter( row => row.length > 0 && row.some( cell => !!cell === true ) );
 	}
 	/**
-     * @param fileContent {String|ArrayBuffer}
+     * @param {String|ArrayBuffer|Buffer} fileContent
      * @returns {Array<String[]>}
      */
-	static readFile( fileContent ) {
-		/** @type {String} */
-		let fileContentString;
-		if ( fileContent instanceof ArrayBuffer ) {
-			const decoder = new TextDecoder( 'utf-8' );
+    static readFile( fileContent ) {
+        /** @type {String} */
+        let fileContentString;
+        if ( fileContent instanceof ArrayBuffer ) {
+            const decoder = new TextDecoder( 'utf-8' );
 			fileContentString = decoder.decode( fileContent );
+		}
+		else if ( fileContent instanceof Buffer ) {
+			fileContentString = fileContent.toString('utf-8');
 		}
 		return Dataset._getNotEmptyLines(
 			Dataset._getCells( Dataset._getLines( fileContentString || fileContent ) )
 		);
 	}
 	/**
-     * @param indexes {Array<Number>}
-     * @param mappedData {Map<any,Map>|Map<any,any[]>|Array<any,Array[]>|Array[]}
-     * @param sortFunctionMap {Map<Number,Function>}
+     * @param {Array<Number>} indexes
+     * @param {Map<any,Map>|Map<any,any[]>|Array<any,Array[]>|Array[]} mappedData
+     * @param {{
+     *    sortFunctionMap:Map<Number,Function>,
+     *    filterFunctionMap:Map<Number,Function>,
+     *    groupByFilterFunctionMap:Map<Number,Function>
+     * }} [options]
+     * @returns {Array|Array[]|Map<String|Number,Array|Map>}
      */
-	static _flat( indexes, mappedData, { sortFunctionMap, filterFunctionMap, groupByFilterFunctionMap } = {} ) {
+    static _flat( indexes, mappedData, options = {} ) {
+        const { sortFunctionMap, filterFunctionMap, groupByFilterFunctionMap } = options;
 		const [first, ...rest] = indexes;
 		if ( first !== undefined ) {
 			let flat = mappedData;
@@ -416,8 +433,8 @@ class Dataset {
 		return mappedData;
 	}
 	/**
-     * @param rows {Array}
-     * @param keys {Number[]}
+     * @param {Array} rows
+     * @param {Number[]} keys
      * @returns {Map<any,Map|Array>}
      */
 	static _groupBy( rows, keys ) {
@@ -446,7 +463,7 @@ class Dataset {
 		return rows;
 	}
 	/**
-     * @param type {String|Function}
+     * @param {String|Function} [type]
      * @returns {Function}
      */
 	static parseType( type ) {
@@ -490,8 +507,8 @@ class Dataset {
 		}
 	}
 	/**
-     * @param header {String[]}
-     * @param options {{types:{String:String|Function}}}
+     * @param {String[]} header
+     * @param {{types:{String:String|Function}}} [options]
      * @returns {DatasetHeader}
      */
 	static parseHeader( header, options ) {
@@ -499,43 +516,60 @@ class Dataset {
 	}
 	/**
      * @param {String|RequestInfo} filePath
-     * @param {{encoders:String[],excluded:String|String[],types:{String:String|Function}}} options
-	 * @param {RequestInit} requestOptions
+     * @param {{encoders:String[],excluded:String|String[],types:{[String]:String|Function}}} [options]
      * @returns {Dataset}
      */
-	static load( filePath, options, requestOptions ) {
-		return new Promise( ( resolve, reject ) => {
-			fetch( filePath, requestOptions )
-				.then( response => {
-					if ( response.status === 200 && response.ok ) {
-						response
-							.text()
-							.then( fileContent => resolve( new Dataset( fileContent, options ) ) )
-							.catch( reject );
-					} else {
-						reject( response );
-					}
-				} )
-				.catch( reject );
+	static load( filePath, options ) {
+        return new Promise( ( resolve, reject ) => {
+            const fs = require( 'fs' );
+            fs.readFile( filePath, { encoding: 'utf-8', flag: 'r' }, ( err, fileContent ) => {
+                if ( err ) {
+                    reject( err );
+                }
+                else {
+                    resolve( new Dataset( fileContent, options ) );
+                }
+            } );
 		} );
-	}
-	/**
-     * @param fileContent {String}
-     * @param options {{encoders:String[],excluded:String|String[],types:{String:String|Function}}}
+    }
+    /**
+     * @param {String|RequestInfo} filePath
+     * @param {{encoders:String[],excluded:String|String[],types:{[String]:String|Function}}} [options]
      * @returns {Dataset}
      */
-	constructor ( fileContent, options ) {
-		const { excluded, encoders, types, slice: { start, end } = {} } = options || {};
+    static loadExternal( filePath, options ) {
+        const https = require( 'https' );
+        const fs = require( 'fs' );
+        return new Promise( ( resolve, reject ) => {
+            https.get( filePath, response => {
+                response.setEncoding( 'utf-8' );
+                let fileContent = '';
+                response.on( 'data', chunk => fileContent += chunk );
+                response.on( 'end', () => resolve( new Dataset( fileContent, options ) ) );
+                response.on( 'error', error => reject( error ) );
+            } );
+        } );
+    }
+	/**
+     * @param {String|ArrayBuffer} fileContent 
+     * @param {{encoders:String[],excluded:String|String[],types:{[String]:String|Function}}} [options] 
+     * @returns {Dataset}
+     */
+	constructor ( fileContent, options = {} ) {
+		const { excluded, encoders, types, slice: { start, end } = {} } = options;
 		const [header, ...rows] = Dataset.readFile( fileContent );
 		this.header = Dataset.parseHeader( header, { types, encoders } );
 		this.rows = this.parseRows( start || end ? rows.slice( start || 0, end ) : rows, { excluded } );
-	}
+    }
+    /**
+     * @returns {String[]}
+     */
 	get columns() {
 		return this.header.columns;
 	}
 	/**
-     * @param key {String}
-     * @param typeSetting {String|Function}
+     * @param {String} key
+     * @param {String|Function} typeSetting
      */
 	setType( key, typeSetting ) {
 		this.header.setColumnTypeByColumnKey( key, typeSetting );
@@ -545,7 +579,7 @@ class Dataset {
 		} );
 	}
 	/**
-     * @param types {Array<Array<String,String|Function>>}
+     * @param {Array<Array<String,String|Function>>} types
      */
 	setTypes( types ) {
 		for ( const [key, typeSetting] of types ) {
@@ -553,7 +587,7 @@ class Dataset {
 		}
 	}
 	/**
-     * @param key {String}
+     * @param {String} key
      * @returns {Array}
      */
 	getColumn( key ) {
@@ -564,7 +598,7 @@ class Dataset {
 		throw new Error();
 	}
 	/**
-     * @param key {String|String[]}
+     * @param {String|String[]} keys
      * @returns {void}
      */
 	removeColumns( keys ) {
@@ -572,18 +606,16 @@ class Dataset {
 		const indexesToRemove = this.header.removeColumns( keys );
 		return new Promise( resolve => {
 			this.mapAsync( row => row.filter( ( _, index ) => !indexesToRemove.includes( index ) ) )
-				.then( () => {
-					resolve( true );
-				} );
+				.then( () => resolve( true ) );
 		} );
 	}
 	/**
-     * @param rows {Array<String[]>}
-     * @param options {{excluded:String|String[]}}
+     * @param {Array<String[]>} rows 
+     * @param {{excluded:String|String[]}} [options] 
      * @returns {Array<Array>}
      */
-	parseRows( rows, options ) {
-		const { excluded } =  options || {} ;
+	parseRows( rows, options = {} ) {
+		const { excluded } =  options;
 		const indexesToRemove = [];
 		if ( excluded ) {
 			indexesToRemove.push( ...this.header.removeColumns( excluded ) );
@@ -602,7 +634,7 @@ class Dataset {
 		} );
 	}
 	/**
-     * @param key {String}
+     * @param {String} key
      * @returns {Array<Array>}
      */
 	encodeColumn( key ) {
@@ -618,7 +650,7 @@ class Dataset {
 		return this.rows;
 	}
 	/**
-     * @param keys {String[]}
+     * @param {String[]} keys
      * @returns {Array<Array>}
      */
 	encodeColumns( keys ) {
@@ -642,8 +674,8 @@ class Dataset {
 		return this.rows;
 	}
 	/**
-     * @param key {String}
-     * @param cell {any}
+     * @param {String} key
+     * @param {any} cell
      * @returns {Number}
      */
 	encodeCell( key, cell ) {
@@ -653,8 +685,8 @@ class Dataset {
 		}
 	}
 	/**
-     * @param key {String}
-     * @param cells {Array}
+     * @param {String} key
+     * @param {Array} cells
      * @returns {Array<Number>}
      */
 	encodeCells( key, cells ) {
@@ -664,7 +696,7 @@ class Dataset {
 		}
 	}
 	/**
-     * @param key {String}
+     * @param {String} key
      * @returns {Array<Array>}
      */
 	decodeColumn( key ) {
@@ -675,7 +707,7 @@ class Dataset {
 		return this.rows;
 	}
 	/**
-     * @param keys {String[]}
+     * @param {String[]} keys
      * @returns {Array<Array>}
      */
 	decodeColumns( keys ) {
@@ -694,8 +726,8 @@ class Dataset {
 		return this.rows;
 	}
 	/**
-     * @param key {String}
-     * @param cells {any}
+     * @param {String} key
+     * @param {any} cells
      * @returns {any}
      */
 	decodeCell( key, cell ) {
@@ -705,8 +737,8 @@ class Dataset {
 		}
 	}
 	/**
-     * @param key {String}
-     * @param cells {Array}
+     * @param {String} key
+     * @param {Array} cells
      * @returns {Array}
      */
 	decodeCells( key, cells ) {
@@ -718,7 +750,7 @@ class Dataset {
 	/**
 	 * @param {any} object
 	 * @param {String|String[]} keys 
-	 * @returns
+	 * @returns {{[String]:Number}}
 	 */
 	count( object, keys ) {
 		const _keys = Array.isArray( keys ) ? keys : [keys];
@@ -735,7 +767,12 @@ class Dataset {
 		} );
 		results[Symbol('target')] = object;
 		return results;
-	}
+    }
+    /**
+	 * @param {any} object
+	 * @param {String|String[]} keys 
+	 * @returns {Promise<{[String]:Number}>}
+	 */
 	async countAsync( object, keys ) {
 		const _keys = Array.isArray( keys ) ? keys : [keys];
 		const indexes = Object.create(null);
@@ -756,20 +793,20 @@ class Dataset {
 		} );
 	}
 	/**
-     * @param keys {String[]}
-     * @param convertToArrays {Boolean?}
+     * @param {String[]} keys
      * @returns {Map}
      */
 	groupBy( keys ) {
 		return Dataset._groupBy( this.rows, keys.some( k => typeof k === 'string' ) ? keys.map( key => this.header.getColumnIndexByColumnKey( key ) ) : keys );
 	}
 	/**
-     * @param keys {Array<Array<String|Number,Function|String|undefined>>}
+     * @param {Array<Array<String|Number,Function|String|undefined>>} keys
+     * @param {Boolean} [inplace]
      * @returns {Array<Array>}
      */
 	sortBy( keys, inplace = true ) {
 		/**
-         * @param type {String|Function|undefined}
+         * @param {String|Function|undefined} [type]
          * @returns {Function}
          */
 		function sortParse( type ) {
@@ -834,8 +871,9 @@ class Dataset {
 		return this.rows;
 	}
 	/**
-     * @param keyFilters {Array<Array<String|Number,Function>>}
-     * @param groupByFilters {Array<Array<String|Number,Function>>}
+     * @param {Array<Array<String|Number,Function>>} keyFilters
+     * @param {Array<Array<String|Number,Function>>} [groupByFilters]
+     * @param {Boolean} [inplace]
      * @returns {Array<Array>}
      */
 	filter( keyFilters, groupByFilters, inplace = true ) {
@@ -892,12 +930,13 @@ class Dataset {
 	 * @returns {void}
 	 */
 	/**
-	 * @param {callback} callback 
+	 * @param {callback} callback
+     * @param {Array} [thisArg]
 	 * @returns {void}
 	 */
-	forEach( callback ) {
+	forEach( callback, thisArg = this.rows ) {
 		for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
-			callback( this.rows[i], i, this.rows );
+			callback( this.rows[i], i, thisArg );
 		}
 	}
 	/**
@@ -908,12 +947,13 @@ class Dataset {
 	 * @returns {void}
 	 */
 	/**
-	 * @param {callback} callback 
+	 * @param {callback} callback
+     * @param {Array} [thisArg]
 	 * @returns {void}
 	 */
-	async forEachAsync( callback ) {
+	async forEachAsync( callback, thisArg = this.rows ) {
 		for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
-			callback( this.rows[i], i, this.rows );
+			callback( this.rows[i], i, thisArg );
 		}
 	}
 	/**
@@ -921,96 +961,56 @@ class Dataset {
 	 * @param {Array} element
 	 * @param {Number} index
 	 * @param {Array[]} array
-	 * @returns {void}
 	 */
 	/**
-	 * @param {callback} callback 
-	 * @returns {void}
+	 * @param {callback} callback
+     * @param {{inplace:Boolean,thisArg:Array[]}} [options]
+	 * @returns {Array}
 	 */
-	map( callback ) {
-		for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
-			this.rows[i] = callback( this.rows[i], i, this.rows );
-		}
-	}
+    map( callback, options = {} ) {
+        const { inplace, thisArg = this.rows } = options;
+        if ( inplace ) {
+            for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
+                this.rows[i] = callback( this.rows[i], i, thisArg );
+            }
+            return this.rows;
+        }
+        else {
+            const rows = [];
+            for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
+                rows[i] = callback( this.rows[i], i, thisArg );
+            }
+            return rows;
+        }
+    }
 	/**
 	 * @callback callback
 	 * @param {Array} element
 	 * @param {Number} index
 	 * @param {Array[]} array
-	 * @returns {void}
 	 */
 	/**
 	 * @param {callback} callback 
-	 * @returns {void}
+     * @param {{inplace:Boolean,thisArg:Array[]}} [options]
+	 * @returns {Array}
 	 */
-	async mapAsync( callback ) {
-		for  ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
-			this.rows[i] = callback( this.rows[i], i, this.rows );
-		}
-	}
+    async mapAsync( callback, options = {} ) {
+        const { inplace, thisArg = this.rows } = options;
+        if ( inplace ) {
+            for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
+                this.rows[i] = callback( this.rows[i], i, thisArg );
+            }
+            return this.rows;
+        }
+        else {
+            const rows = [];
+            for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
+                rows[i] = callback( this.rows[i], i, thisArg );
+            }
+            return rows;
+        }
+    }
 
-	forEachIterator( options ) {
-		if ( options ) {
-			const { filterBy, groupBy, ignore } = options;
-			const groupByArray = typeof groupBy === 'string' ? [groupBy] : groupBy;
-			const index_lookup = [];
-			const deep_index_lookup = [];
-			const filtered_rows = [];
-			const filtered_map = new Map();
-			let index = 0;
-			for ( const row of this.rows ) {
-				if ( filterBy ) {
-					if ( filterBy.every( ( [prop, value] ) => filterBy_func( prop, value, row ) ) ) {
-						if ( groupBy ) {
-							deep_index_lookup.push( ...groupBy_func( filtered_map, row, ...groupByArray ) );
-							index_lookup.push( index );
-						} else {
-							index_lookup.push( index );
-							filtered_rows.push( row );
-						}
-					}
-				} else if ( groupBy ) {
-					deep_index_lookup.push( [...groupBy_func( filtered_map, row, ...groupByArray ), index] );
-					index_lookup.push( index );
-				}
-				index++;
-			}
-			if ( groupBy ) {
-				let index = 0;
-				const _this = this;
-				const limit = deep_index_lookup.length;
-				return  {
-					[Symbol.iterator]: () => ( {
-						next: () => ( {
-							value: index < limit ? Object.assign( Object.create( null ), {
-								row: _this.rows[index_lookup[index]],
-								... ignore && ignore.includes( 'groups' ) ? {} : { groups: deep_map_get( filtered_map, _this.rows[index_lookup[index]], ...groupByArray ) } ,
-								... ignore && ignore.includes( 'indices' ) ? {} : { indices: deep_index_lookup[index] } 
-							} ) : undefined, done: !( index++ < limit )
-						} )
-					} )
-				} ;
-			} else if ( filterBy ) {
-				let index = 0;
-				const _this = this;
-				const limit = filtered_rows.length;
-				return  {
-					[Symbol.iterator]: () => ( {
-						next: () => ( {
-							value: index < limit ? Object.assign( Object.create( null ), {
-								row: _this.rows[index_lookup[index]],
-								index: index_lookup[index],
-								filtered_rows: filtered_rows,
-								filtered_index: index
-							} ) : undefined, done: !( index++ < limit )
-						} )
-					} )
-				} ;
-			} else {
-				let index = 0;
-				const limit = this.rows.length;
-				return  { [Symbol.iterator]: () => ( { next: () => ( { value: index < limit ? [this.rows[index], index, this.rows] : undefined, done: !( index++ < limit ) } ) } ) } ;
-			}
-		}
-	}
 }
+
+module.exports = { Dataset, DatasetEncoder, DatasetHeader };
