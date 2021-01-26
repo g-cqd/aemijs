@@ -42,10 +42,10 @@ class ExtendedWorker {
 		if ( typeof WorkerOptions === 'object' ) {
 			if ( 'localImports' in WorkerOptions ) {
 				if ( typeof WorkerOptions.localImports === 'string' ) {
-					scripts.push( `${window.location.href}${WorkerOptions.localImports}` );
+					scripts.push( `${window.location.origin}${WorkerOptions.localImports}` );
 				}
 				else {
-					scripts.push( ...( WorkerOptions.localImports.map( path => `${window.location.href}${path}` ) ) );
+					scripts.push( ...( WorkerOptions.localImports.map( path => `${window.location.origin}${path}` ) ) );
 				}
 			}
 			if ( 'importScripts' in WorkerOptions ) {
@@ -95,10 +95,10 @@ class ExtendedWorker {
 		if ( typeof WorkerOptions === 'object' ) {
 			if ( 'localImports' in WorkerOptions ) {
 				if ( typeof WorkerOptions.localImports === 'string' ) {
-					scripts.push( `${window.location.href}${WorkerOptions.localImports}` );
+					scripts.push( `${window.location.origin}${WorkerOptions.localImports}` );
 				}
 				else {
-					scripts.push( ...( WorkerOptions.localImports.map( path => `${window.location.href}${path}` ) ) );
+					scripts.push( ...( WorkerOptions.localImports.map( path => `${window.location.origin}${path}` ) ) );
 				}
 			}
 			if ( 'importScripts' in WorkerOptions ) {
@@ -269,4 +269,3 @@ class ExtendedWorker {
 }
 
 export { ExtendedWorker };
-
