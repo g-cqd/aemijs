@@ -1,5 +1,7 @@
 /* eslint-env browser */
 
+import { ObjectForEach } from './utils.js';
+
 /**
  * Check whether a class is present in an element's classlist
  * @param {HTMLElement} element - Element on which to check if the class is present
@@ -113,6 +115,7 @@ function data( element, dataset, value ) {
  * Element Creation Shorthand
  * @param {{
  * 	attr:{[String]:String},
+ *  class:String|String[],
  *  data:{[String]:String},
  *  events:[type:String,listener:Function,options:Boolean|AddEventListenerOptions][],
  *  id:String,

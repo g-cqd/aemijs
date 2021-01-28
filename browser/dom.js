@@ -113,6 +113,7 @@ function data( element, dataset, value ) {
  * Element Creation Shorthand
  * @param {{
  * 	attr:{[String]:String},
+ *  class:String|String[],
  *  data:{[String]:String},
  *  events:[type:String,listener:Function,options:Boolean|AddEventListenerOptions][],
  *  id:String,
