@@ -212,7 +212,7 @@ function ecs( ...args ) {
         } );
     }
     if ( $childElements ) {
-        for ( const item of ( !( typeof $childElements === 'string' ) && Symbol.iterator in $childElements ? $childElements : [$childElements] ) ) {
+        for ( const item of ( ( typeof $childElements === 'object' && Symbol.iterator in $childElements ) ? $childElements : [$childElements] ) ) {
             if ( item instanceof Element ) {
                 current.appendChild( item );
             }
