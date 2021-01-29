@@ -234,7 +234,7 @@ class ExtendedWorker {
 		const { id, err, data } = message.data;
 		const resolve = ExtendedWorker.resolves[id];
 		const reject = ExtendedWorker.rejects[id];
-		if ( data ) {
+		if ( !err ) {
 			if ( resolve ) {
 				resolve( data );
 			}
