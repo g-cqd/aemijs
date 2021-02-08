@@ -1,4 +1,28 @@
-class IArray {
+/* eslint-env browser */
+
+/**
+ * @param  {...Function} funcs 
+ * @returns {Function}
+ */
+export function pipe ( ...funcs ) {
+    if ( funcs.length > 0 ) {
+        return funcs.reduce( ( acc, curr ) => arg => curr( acc( arg ) ) );
+    }
+    throw new Error( 'No function passed.' );
+};
+
+/**
+ * @param  {...Function} funcs 
+ * @returns {Function}
+ */
+export function compose( ...funcs ) {
+    if ( funcs.length > 0 ) {
+        return funcs.reduceRight( ( acc, curr ) => arg => curr( acc( arg ) ) );
+    }
+    throw new Error( 'No function passed.' );
+}
+
+export class IArray {
 
     static toImmutable( thisArg ) {
         if ( !( IArray.isIArray( thisArg ) ) ) {
@@ -555,4 +579,4 @@ class IArray {
     }
 };
 
-module.exports = { IArray };
+export default { pipe, compose, IArray };

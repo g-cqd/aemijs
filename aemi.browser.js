@@ -1831,6 +1831,27 @@ var Aemi = (function (exports) {
 
     /* eslint-env browser */
 
+    /**
+     * @param  {...Function} funcs 
+     * @returns {Function}
+     */
+    function pipe ( ...funcs ) {
+        if ( funcs.length > 0 ) {
+            return funcs.reduce( ( acc, curr ) => arg => curr( acc( arg ) ) );
+        }
+        throw new Error( 'No function passed.' );
+    }
+    /**
+     * @param  {...Function} funcs 
+     * @returns {Function}
+     */
+    function compose( ...funcs ) {
+        if ( funcs.length > 0 ) {
+            return funcs.reduceRight( ( acc, curr ) => arg => curr( acc( arg ) ) );
+        }
+        throw new Error( 'No function passed.' );
+    }
+
     class IArray {
 
         static toImmutable( thisArg ) {
@@ -2386,7 +2407,7 @@ var Aemi = (function (exports) {
             return this;
         }
     }
-    var immutable = { IArray };
+    var functional = { pipe, compose, IArray };
 
     /* eslint-env browser */
 
@@ -3428,7 +3449,7 @@ var Aemi = (function (exports) {
     exports.Content = content;
     exports.DOM = dom;
     exports.Dataset = dataset;
-    exports.Immutable = immutable;
+    exports.Functional = functional;
     exports.Loading = loading;
     exports.Math = math;
     exports.Move = move;

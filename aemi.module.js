@@ -1,7 +1,7 @@
 import Content from './module/content.js';
 import Dataset from './module/dataset.js';
 import DOM from './module/dom.js';
-import Immutable from './module/immutable.js';
+import Functional from './module/functional.js';
 import Loading from './module/loading.js';
 import Math from './module/math.js';
 import Move from './module/move.js';
@@ -14,7 +14,7 @@ export {
     Content,
     Dataset,
     DOM,
-    Immutable,
+    Functional,
     Loading,
     Math,
     Move,
