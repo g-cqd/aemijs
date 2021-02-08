@@ -2,7 +2,7 @@
 
 import { ExtendedWorker } from './multithread.js';
 
-class MarkdownParser {
+export class MarkdownParser {
     /**
      * @param {String} MarkdownParserLibraryURL 
      */
@@ -31,7 +31,7 @@ class MarkdownParser {
     }
 }
 
-class VariableManager {
+export class VariableManager {
     constructor () {
         const gl = getGlobal();
         if ( !( 'VariableManager' in gl ) ) {
@@ -160,4 +160,4 @@ class VariableManager {
     }
 }
 
-export { MarkdownParser, VariableManager };
+export default { MarkdownParser, VariableManager };

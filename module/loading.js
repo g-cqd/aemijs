@@ -3,7 +3,7 @@
 import { ExtendedWorker } from './multithread.js';
 import { getGlobal } from './utils.js';
 
-class Wait {
+export class Wait {
 	constructor () { }
 	/**
 	 * @returns {{
@@ -198,7 +198,7 @@ class Wait {
 	}
 }
 
-class ImageLoader {
+export class ImageLoader {
 	constructor () {
 		this.worker = new ExtendedWorker(
 			function () {
@@ -281,4 +281,4 @@ class ImageLoader {
 	}
 }
 
-export { ImageLoader, Wait };
+export default { ImageLoader, Wait };

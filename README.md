@@ -6,6 +6,14 @@ Code is yet poorly commented but I'll improve that and I really welcome any help
 
 Happy Coding everyone !
 
+## Bundling for Browser
+
+```
+rollup aemi.module.js --file aemi.browser.js --format iife --name Aemi
+
+terser aemi.browser.js -o aemi.browser.min.js --compress --mangle --ecma 2021
+```
+
 ## Usage
 
 Soon.

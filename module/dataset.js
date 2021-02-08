@@ -1,6 +1,6 @@
 /* eslint-env browser */
 
-class DatasetEncoder {
+export class DatasetEncoder {
     /**
      * @param {String} key
      * @returns {DatasetEncoder}
@@ -61,7 +61,7 @@ class DatasetEncoder {
     }
 }
 
-class DatasetHeader {
+export class DatasetHeader {
     /**
      * @param {String[]} array
      * @param {{types:{[String]:String|Function}}} [options]
@@ -283,7 +283,7 @@ class DatasetHeader {
     }
 }
 
-class Dataset {
+export class Dataset {
     /**
      * @param {Array} elements 
      * @param {Boolean} [fundamental] 
@@ -995,4 +995,4 @@ class Dataset {
     }
 }
 
-export { Dataset, DatasetEncoder, DatasetHeader };
+export default { Dataset, DatasetEncoder, DatasetHeader };

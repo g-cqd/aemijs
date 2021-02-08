@@ -4,7 +4,7 @@ import { getGlobal, newUID } from './utils.js';
 /**
  * Benchmark JavaScript Code
  */
-class Benchmark {
+export class Benchmark {
     /**
      * @param {{logging:Boolean}} [options] - Options passed to Benchmark
      */
@@ -176,4 +176,4 @@ class Benchmark {
     }
 }
 
-export { Benchmark };
+export default { Benchmark };

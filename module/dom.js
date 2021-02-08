@@ -8,7 +8,7 @@ import { ObjectForEach } from './utils.js';
  * @param {String} className - Class to check
  * @returns {Boolean} Whether an element has checked class or not
  */
-function hasClass( element, className ) {
+export function hasClass( element, className ) {
     if ( element && element instanceof Element && !!className && typeof className === 'string' ) {
         return element.classList.contains( className );
     }
@@ -21,7 +21,7 @@ function hasClass( element, className ) {
  * @param {Boolean} [requireAnimationFrame] - Require an animation frame to add the class
  * @returns {DOMTokenList|Promise<DOMTokenList>} Classlist containing the added class
  */
-function addClass( element, className, requireAnimationFrame ) {
+export function addClass( element, className, requireAnimationFrame ) {
     requireAnimationFrame = requireAnimationFrame || false;
     if ( element && element instanceof Element && !!className && typeof className === 'string' ) {
         if ( requireAnimationFrame ) {
@@ -45,7 +45,7 @@ function addClass( element, className, requireAnimationFrame ) {
  * @param {Boolean} [requireAnimationFrame] - Require an animation frame to remove the class
  * @returns {DOMTokenList|Promise<DOMTokenList>} Classlist without the removed class
  */
-function removeClass( element, className, requireAnimationFrame ) {
+export function removeClass( element, className, requireAnimationFrame ) {
     requireAnimationFrame = requireAnimationFrame || false;
     if ( element && element instanceof Element && !!className && typeof className === 'string' ) {
         if ( requireAnimationFrame ) {
@@ -69,7 +69,7 @@ function removeClass( element, className, requireAnimationFrame ) {
  * @param {Boolean} [requireAnimationFrame] - Require an animation frame to toggle the class
  * @returns {DOMTokenList|Promise<DOMTokenList>} Classlist containing or not the targeted class
  */
-function toggleClass( element, className, requireAnimationFrame ) {
+export function toggleClass( element, className, requireAnimationFrame ) {
     requireAnimationFrame = requireAnimationFrame || false;
     if ( element && element instanceof Element && !!className && typeof className === 'string' ) {
         return hasClass( element, className )
@@ -85,7 +85,7 @@ function toggleClass( element, className, requireAnimationFrame ) {
  * @param {Any} [value]
  * @returns {NamedNodeMap|String|void}
  */
-function attr( element, attrName, value ) {
+export function attr( element, attrName, value ) {
     if ( !!attrName && typeof attrName === 'string' ) {
         if ( value !== undefined ) {
             return element.setAttribute( attrName, value );
@@ -101,7 +101,7 @@ function attr( element, attrName, value ) {
  * @param {Any} [value]
  * @returns {DOMStringMap|String|void}
  */
-function data( element, dataset, value ) {
+export function data( element, dataset, value ) {
     if ( !!dataset && typeof dataset === 'string' ) {
         if ( value !== undefined ) {
             element.dataset[dataset] = value;
@@ -126,7 +126,7 @@ function data( element, dataset, value ) {
  * }[]} args
  * @returns {HTLMElement}
  */
-function ecs( ...args ) {
+export function ecs( ...args ) {
     const { length } = args;
     args = args.filter( item => !!item );
     if ( length === 0 ) {
@@ -261,7 +261,7 @@ function ecs( ...args ) {
  * Execute ecs in an inline script an replace script by ecs' result
  * @param {...({attr:{[String]:String},data:{[String]:String},events:[type:String,listener:Function,options:Boolean|AddEventListenerOptions][],id:String,ns:String,style:{[String]:String}t:String,_:(Any[]|Any)})}
  */
-function ecsr() {
+export function ecsr() {
     const { currentScript } = document;
     const { parentElement } = currentScript;
     if ( ![document.head, document.documentElement].includes( parentElement ) ) {
@@ -269,7 +269,7 @@ function ecsr() {
     }
 }
 
-export {
+export default {
     hasClass,
     addClass,
     removeClass,

@@ -2,7 +2,7 @@
 
 import { getGlobal, newUID } from './utils.js';
 
-class ExtendedWorker {
+export class ExtendedWorker {
 	/**
 	 * @param {Function|String} WorkerObject - Function or Worker file URL from which to create an ExtendedWorker
 	 * @param {{
@@ -268,4 +268,4 @@ class ExtendedWorker {
 	}
 }
 
-export { ExtendedWorker };
+export default { ExtendedWorker };

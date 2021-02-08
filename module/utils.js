@@ -2,7 +2,7 @@
  * Get globalThis object in any scope
  * @returns {globalThis} The globalThis object
  */
-function getGlobal() {
+export function getGlobal() {
     return globalThis || self || window || global;
 }
 
@@ -10,7 +10,7 @@ function getGlobal() {
  * Test if in Browser Environment
  * @returns {Boolean} 
  */
-function isBrowser() {
+export function isBrowser() {
     return typeof window !== 'undefined' || typeof self !== 'undefined';
 }
 
@@ -26,7 +26,7 @@ function isNode() {
  * Test if in standard Web Worker Environment
  * @returns {Boolean}
  */
-function isWorker() {
+export function isWorker() {
     return typeof self !== 'undefined' && getGlobal() === self;
 }
 
@@ -43,7 +43,7 @@ function isWorker() {
  * @param {callback} func - Function to apply over each entry of passed object
  * @returns {void}
  */
-function ObjectForEach( object, func ) {
+export function ObjectForEach( object, func ) {
     let index = 0;
     for ( const key in object ) {
         if ( Object.prototype.hasOwnProperty.call( object, key ) ) {
@@ -65,7 +65,7 @@ function ObjectForEach( object, func ) {
  * @param {callback} func - Function to apply over each entry of passed object
  * @returns {void}
  */
-function ObjectMap( object, func ) {
+export function ObjectMap( object, func ) {
     const newObject = {};
     let index = 0;
     for ( const key in object ) {
@@ -81,7 +81,7 @@ function ObjectMap( object, func ) {
  * @param {Number} length - Length of identifier to return
  * @returns {String} Unique Identifier
  */
-function newUID( length = 16 ) {
+export function newUID( length = 16 ) {
     /**
      * @param {Number} number 
      * @returns {String}
@@ -106,7 +106,7 @@ function newUID( length = 16 ) {
     return res;
 }
 
-export {
+export default {
     isBrowser,
     isWorker,
     isNode,

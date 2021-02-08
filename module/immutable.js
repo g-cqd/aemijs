@@ -1,6 +1,6 @@
 /* eslint-env browser */
 
-class IArray {
+export class IArray {
 
     static toImmutable( thisArg ) {
         if ( !( IArray.isIArray( thisArg ) ) ) {
@@ -557,4 +557,4 @@ class IArray {
     }
 };
 
-export { IArray };
+export default { IArray };

@@ -1,7 +1,7 @@
 /* eslint-env browser */
 
 
-const Cookies = {
+export const Cookies = {
 	/**
 	 * @returns {String} Datetime One Year Later
 	 */
@@ -59,7 +59,7 @@ const Cookies = {
 	}
 };
 
-class WebPTest {
+export class WebPTest {
 	constructor () { }
 	static get data() {
 		return [
@@ -134,7 +134,7 @@ class WebPTest {
 	}
 };
 
-export {
+export default {
     Cookies,
     WebPTest
 };

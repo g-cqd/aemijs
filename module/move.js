@@ -1,6 +1,6 @@
 /* eslint-env browser */
 
-import { Easing } from './maths.js';
+import { Easing } from './math.js';
 
 /**
  * Apply a smooth scroll animation when navigating through a page
@@ -11,7 +11,7 @@ import { Easing } from './maths.js';
  * @param {String} selector 
  * @param {Number} duration 
  */
-function smoothScrollTo ( event, selector, duration = 1000 ) {
+export function smoothScrollTo ( event, selector, duration = 1000 ) {
     event.preventDefault();
 	event.stopPropagation();
     const { easeInOutCubic } = Easing;
@@ -40,5 +40,5 @@ function smoothScrollTo ( event, selector, duration = 1000 ) {
     window.requestAnimationFrame( animation );
 }
 
-export { smoothScrollTo };
+export default { smoothScrollTo };
 
