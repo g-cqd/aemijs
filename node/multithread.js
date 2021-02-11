@@ -1,4 +1,5 @@
 const { getGlobal, newUID } = require( './utils.js' );
+const { Worker } = require( 'worker_threads' );
 
 class PromiseWorker {
     /**
