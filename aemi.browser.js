@@ -653,8 +653,7 @@ var Aemi = (function (exports) {
                     ... this.types.has( key ) ? { type: this.types.get( key ) } : {},
                     ... this.encoders.has( key ) ? { encoder: this.encoders.get( key ) } : {}
                 };
-            }
-            else {
+            } else {
                 return undefined;
             }
         }
@@ -898,10 +897,11 @@ var Aemi = (function (exports) {
         }
         /**
          * @param {String[]} fileRowsStrings
+         * @param {String} separator
          * @returns {Array<String[]>}
          */
-        static _getCells( fileRowsStrings ) {
-            return fileRowsStrings.map( row => row.replace( /\r/g, '' ).split( /,/g ).map( cell => cell.trim() ) );
+        static _getCells( fileRowsStrings, separator = ',' ) {
+            return fileRowsStrings.map( row => row.replace( /\r/g, '' ).split( separator ).map( cell => cell.trim() ) );
         }
         /**
          * @param {Array<String[]>} fileCells2d
@@ -911,7 +911,8 @@ var Aemi = (function (exports) {
             return fileCells2d.filter( row => row.length > 0 && row.some( cell => !!cell === true ) );
         }
         /**
-         * @param {String|ArrayBuffer} fileContent
+         * @param {String|String[]|ArrayBuffer} fileContent
+         * @param {String} separator
          * @returns {Array<String[]>}
          */
         static readFile( fileContent ) {
@@ -920,6 +921,11 @@ var Aemi = (function (exports) {
             if ( fileContent instanceof ArrayBuffer ) {
                 const decoder = new TextDecoder( 'utf-8' );
                 fileContentString = decoder.decode( fileContent );
+            }
+            else if ( Array.isArray( fileContent ) ) {
+                if ( typeof fileContent[0] === 'string' ) {
+                    return Dataset._getNotEmptyLines( Dataset._getCells( fileContent, separator ) );
+                }
             }
             return Dataset._getNotEmptyLines(
                 Dataset._getCells( Dataset._getLines( fileContentString || fileContent ) )
@@ -1102,6 +1108,19 @@ var Aemi = (function (exports) {
          */
         get columns() {
             return this.header.columns;
+        }
+        /**
+         * @returns {{[String]:any}[]}
+         */
+        get objects() {
+            const { columns } = this;
+            return this.rows.map( row => {
+                const object = Object.create( null );
+                for ( let i = 0, { length } = columns; i < length; i += 1 ) {
+                    object[columns[i]] = row[i];
+                }
+                return object;
+            } );
         }
         /**
          * @param {String} key
