@@ -1,22 +1,23 @@
-const { ExtendedWorker } = require( './multithread.js' );
+const { PromiseWorker } = require( './multithread.js' );
 
 class ImageLoader {
 	constructor () {
-		this.worker = new ExtendedWorker(
-			function () {
-				self.onmessage = function ( event ) {
-					url( event.data.data.url, event.data.id ).then(
-						function ( [id, result] ) {
-							self.postMessage( {
-								id: id,
-								data: { url: result || '' }
-							} );
-						}
-					);
-				};
+		this.worker = new PromiseWorker.createFromFunction(
+            function () {
+                const { parentPort } = require( 'worker_threads' );
+                parentPort.on( 'message', event => {
+                    url( event.data.url, event.id ).then(
+                        function ( [id, result] ) {
+                            parentPort.postMessage( {
+                                id: id,
+                                data: { url: result || '' }
+                            } );
+                        }
+                    );
+                } );
 				function url( url, id, options ) {
 					options = !!options && typeof options === 'object' ? options : Object.create( null );
-					return new Promise( async function ( resolve, reject ) {
+                    return new Promise( async function ( resolve, reject ) {
 						fetch( url, {
 							method: 'GET',
 							mode: 'cors',
