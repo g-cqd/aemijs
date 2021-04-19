@@ -4,17 +4,14 @@ AemiJS is a bunch of scripts and micro-lib that can help programming with vanill
 
 Code is yet poorly commented but I'll improve that and I really welcome any help, advice and questions.
 
-Happy Coding everyone !
-
-## Bundling for Browser
-
-```
-rollup aemi.module.js --file aemi.browser.js --format iife --name Aemi
-
-terser aemi.browser.js -o aemi.browser.min.js --compress --mangle --ecma 2021
-```
+Happy coding!
 
 ## Usage
+
+See branches:
+
+- [esm-browser](https://github.com/aemi-dev/aemijs/tree/esm-browser)
+- [nodejs](https://github.com/aemi-dev/aemijs/tree/nodejs)
 
 Soon.
 
