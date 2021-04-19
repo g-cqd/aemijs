@@ -1,7 +1,8 @@
-/* eslint-env browser */
+/* eslint-env module */
 
 import { ExtendedWorker } from './multithread.js';
 import { getGlobal } from './utils.js';
+import { WebPTest } from "./navigator.js";
 
 export class Wait {
 	constructor () { }
@@ -84,7 +85,7 @@ export class Wait {
 		}
 	}
 	/**
-	 * @param {"interactive" | "complete" | "DOMContentLoaded" | "load"} type - EventType or Key to wait to be dispatched or already registered
+	 * @param {"interactive" | "complete" | "DOMContentLoaded" | "load"} type - EventType or Key to wait to be dispatched or already registered
 	 * @returns {Promise<any[]>}
 	 */
 	static all( type ) {

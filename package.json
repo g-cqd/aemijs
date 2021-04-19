@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "rollup": "^2.45.2",
+    "terser": "^5.6.1"
+  }
+}

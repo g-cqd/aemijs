@@ -1,4 +1,4 @@
-/* eslint-env browser */
+/* eslint-env module */
 
 
 export const Cookies = {

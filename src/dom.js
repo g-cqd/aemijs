@@ -1,4 +1,4 @@
-/* eslint-env browser */
+/* eslint-env module */
 
 import { ObjectForEach } from './utils.js';
 
@@ -14,6 +14,7 @@ export function hasClass( element, className ) {
     }
     throw new Error( 'Element and/or ClassName arguments are not correct.' );
 }
+
 /**
  * Add a class to an element's classList
  * @param {HTMLElement} element - Element on which to add the class
@@ -111,19 +112,32 @@ export function data( element, dataset, value ) {
     }
     return element.dataset;
 }
+
+/**
+ * @typedef {[string,(this:HTMLElement,ev:any),2:AddEventListenerOptions]} EventListenerArguments
+ * @type {Array}
+ */
+
+/**
+ * @typedef {Object} ElementCreationShorthandInput
+ * @property {Object} attr
+ * @property {String} attr.*
+ * @property {String|String[]} class
+ * @property {Object} data
+ * @property {String} data.*
+ * @property {EventListenerArguments[]} events
+ * @property {String} id
+ * @property {String} ns
+ * @property {Object} style
+ * @property {String} style.*
+ * @property {String} t
+ * @property {any|any[]} _
+ */
+
 /**
  * Element Creation Shorthand
- * @param {{
- * 	attr:{[String]:String},
- *  class:String|String[],
- *  data:{[String]:String},
- *  events:[type:String,listener:Function,options:Boolean|AddEventListenerOptions][],
- *  id:String,
- *  ns:String,
- *  style:{[String]:String}
- *  t:String,
- *  _:(Any[]|Any)
- * }[]} args
+ * 
+ * @param {Array.<ElementCreationShorthandInput|ElementCreationShorthandInput[]|Element|Element[]>} args
  * @returns {HTLMElement}
  */
 export function ecs( ...args ) {
@@ -259,13 +273,13 @@ export function ecs( ...args ) {
 }
 /**
  * Execute ecs in an inline script an replace script by ecs' result
- * @param {...({attr:{[String]:String},data:{[String]:String},events:[type:String,listener:Function,options:Boolean|AddEventListenerOptions][],id:String,ns:String,style:{[String]:String}t:String,_:(Any[]|Any)})}
+ * @param {Array.<ElementCreationShorthandInput|ElementCreationShorthandInput[]|Element|Element[]>} args
  */
-export function ecsr() {
+export function ecsr(...args) {
     const { currentScript } = document;
     const { parentElement } = currentScript;
     if ( ![document.head, document.documentElement].includes( parentElement ) ) {
-        parentElement.replaceChild( ecs( ...arguments ), currentScript );
+        parentElement.replaceChild( ecs( ...args ), currentScript );
     }
 }
 

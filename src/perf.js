@@ -1,16 +1,15 @@
-/** eslint-env node */
+/* eslint-env module */
 
-const { performance } = require( 'perf_hooks' );
-const { newUID } = require( './utils.js' );
+import { getGlobal, newUID } from './utils.js';
 /**
  * Benchmark JavaScript Code
  */
-class Benchmark {
+export class Benchmark {
     /**
-     * @param {{logging:Boolean}} options - Options passed to Benchmark
+     * @param {{logging:Boolean}} [options] - Options passed to Benchmark
      */
     constructor ( options = {} ) {
-        this.perf = performance;
+        this.perf = getGlobal().performance;
         this.options = {
             _logging: options.logging || false,
             _iterations: undefined,
@@ -177,4 +176,4 @@ class Benchmark {
     }
 }
 
-module.exports = { Benchmark };
+export default { Benchmark };

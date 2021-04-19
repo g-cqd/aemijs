@@ -1,3 +1,5 @@
+/* eslint-env module */
+
 /**
  * Get globalThis object in any scope
  * @returns {globalThis} The globalThis object
@@ -27,7 +29,7 @@ function isNode() {
  * @returns {Boolean}
  */
 export function isWorker() {
-    return typeof self !== 'undefined' && getGlobal() === self;
+    return typeof this.document !== 'undefined';
 }
 
 /**
@@ -63,7 +65,7 @@ export function ObjectForEach( object, func ) {
  * Apply a function to each entry of an object
  * @param {Object} object - Object to iterate over its entries
  * @param {callback} func - Function to apply over each entry of passed object
- * @returns {void}
+ * @returns {Object}
  */
 export function ObjectMap( object, func ) {
     const newObject = {};
@@ -78,6 +80,7 @@ export function ObjectMap( object, func ) {
 
 /**
  * Retrieve a unique identifier
+ * 
  * @param {Number} length - Length of identifier to return
  * @returns {String} Unique Identifier
  */

@@ -1,26 +1,28 @@
-/**
- * @param  {...Function} funcs 
- * @returns {Function}
- */
-function pipe ( ...funcs ) {
-    if ( funcs.length > 0 ) {
-        return funcs.reduce( ( acc, curr ) => arg => curr( acc( arg ) ) );
-    }
-    throw new Error( 'No function passed.' );
-};
+/* eslint-env module */
 
 /**
  * @param  {...Function} funcs 
  * @returns {Function}
  */
-function compose( ...funcs ) {
+export function pipe ( ...funcs ) {
+    if ( funcs.length > 0 ) {
+        return funcs.reduce( ( acc, curr ) => arg => curr( acc( arg ) ) );
+    }
+    throw new Error( 'No function passed.' );
+}
+
+/**
+ * @param  {...Function} funcs 
+ * @returns {Function}
+ */
+export function compose( ...funcs ) {
     if ( funcs.length > 0 ) {
         return funcs.reduceRight( ( acc, curr ) => arg => curr( acc( arg ) ) );
     }
     throw new Error( 'No function passed.' );
 }
 
-class IArray {
+export class IArray {
 
     static toImmutable( thisArg ) {
         if ( !( IArray.isIArray( thisArg ) ) ) {
@@ -101,6 +103,9 @@ class IArray {
         }
         else {
             this.length = length;
+            for ( let i = 0; i < length; i += 1 ) {
+                this[i] = args[i];
+            }
             Object.freeze( this );
         }
     }
@@ -111,9 +116,23 @@ class IArray {
         return ( {
             next: () => ( {
                 value: i < length ? this[i] : undefined,
-                done: !( i++ < length )
+                done: i++ >= length
             } )
         } );
+    }
+
+    toString() {
+        const { length } = this;
+        if ( length === 0 ) {
+            return '';
+        }
+        else {
+            let outputString = `${this[0]}`;
+            for ( let i = 1; i < length; i += 1 ) {
+                outputString += `,${this[i]}`;
+            }
+            return outputString;
+        }
     }
 
     /**
@@ -132,7 +151,7 @@ class IArray {
 
     initialize() {
         if ( IArray.isImmutable( this ) ) {
-            throw new Error( 'As an immutable data structure, <fill> method can not be called on it.' );
+            throw new Error( 'As an immutable data structure, <initialize> method can not be called on it.' );
         }
         for ( let i = 0, { length } = this; i < length; i += 1 ) {
             this[i] = null;
@@ -345,7 +364,7 @@ class IArray {
     reverse() {
         const { length } = this;
         const Mutable = new IArray( length );
-        for ( let i = 1; i <= length; i -= 1 ) {
+        for ( let i = 1; i <= length; i += 1 ) {
             Mutable[i - 1] = this[length - i];
         }
         return Object.freeze( Mutable );
@@ -577,4 +596,4 @@ class IArray {
     }
 };
 
-module.exports = { pipe, compose, IArray };
+export default { pipe, compose, IArray };

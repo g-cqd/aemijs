@@ -1,10 +1,6 @@
-/* eslint-env node */
+/* eslint-env module */
 
-class DatasetEncoder {
-    /**
-     * @param {String} key
-     * @returns {DatasetEncoder}
-     */
+export class DatasetEncoder {
     constructor () {
         this.values = [];
     }
@@ -33,7 +29,7 @@ class DatasetEncoder {
         }
     }
     /**
-     * @param {Number} value 
+     * @param {any} value 
      * @returns {Array<Number>}
      */
     getOneHotEncoded( value ) {
@@ -61,10 +57,23 @@ class DatasetEncoder {
     }
 }
 
-class DatasetHeader {
+export class DatasetHeader {
+    /**
+     * @typedef {Object} DatasetHeaderOptions
+     * @property {Object} [types]
+     * @property {String|Function} types.*
+     * @property {String|String[]} [encoders]
+     * 
+     * @typedef {Object} DatasetHeaderColumnInfo
+     * @property {String} key
+     * @property {Number} index
+     * @property {Function} [type]
+     * @property {DatasetEncoder} [encoder]
+     */
+
     /**
      * @param {String[]} array
-     * @param {{types:{[String]:String|Function}}} [options]
+     * @param {DatasetHeaderOptions} [options]
      */
     constructor ( array, options ) {
         /** @type {Map<Number,String>} */
@@ -88,9 +97,10 @@ class DatasetHeader {
     get columns() {
         return [...this.indexes.keys()];
     }
+
     /**
      * @param {String} key
-     * @returns {{key:String,index:Number,type?:Function,encoder?:DatasetEncoder}}
+     * @returns {DatasetHeaderColumnInfo}
      */
     getColumnByKey( key ) {
         if ( this.indexes.has( key ) ) {
@@ -100,13 +110,14 @@ class DatasetHeader {
                 ... this.types.has( key ) ? { type: this.types.get( key ) } : {},
                 ... this.encoders.has( key ) ? { encoder: this.encoders.get( key ) } : {}
             };
-        } else {
+        }
+        else {
             return undefined;
         }
     }
     /**
      * @param {Number} index
-     * @returns {{key:String,index:Number,type?:Function,encoder?:DatasetEncoder}}
+     * @returns {DatasetHeaderColumnInfo}
      */
     getColumnByIndex( index ) {
         if ( this.keys.has( index ) ) {
@@ -256,7 +267,7 @@ class DatasetHeader {
     }
     /**
      * @param {String[]} array
-     * @param {{types:{[String]:String|Function},encoders:String|String[]}} [options]
+     * @param {DatasetHeaderOptions} [options]
      * @returns {DatasetHeader}
      */
     parseFromArray( array, options = {} ) {
@@ -268,7 +279,7 @@ class DatasetHeader {
     }
     /**
      * @param {String[]} array
-     * @param {{types:{[String]:String|Function},encoders:String|String[]}} [options]
+     * @param {DatasetHeaderOptions} [options]
      * @returns {DatasetHeader}
      */
     static parseFromArray( array, options = {} ) {
@@ -282,7 +293,16 @@ class DatasetHeader {
     }
 }
 
-class Dataset {
+export class Dataset {
+
+    /**
+     * @typedef {Object} DatasetOptions
+     * @property {Object} [types]
+     * @property {String|Function} types.*
+     * @property {String|String[]} [encoders]
+     * @property {String|String[]} [excluded]
+     */
+    
     /**
      * @param {Array} elements 
      * @param {Boolean} [fundamental] 
@@ -344,11 +364,10 @@ class Dataset {
     }
     /**
      * @param {String[]} fileRowsStrings
-     * @param {String} separator
      * @returns {Array<String[]>}
      */
-    static _getCells( fileRowsStrings, separator = ',' ) {
-        return fileRowsStrings.map( row => row.replace( /\r/g, '' ).split( separator ).map( cell => cell.trim() ) );
+    static _getCells( fileRowsStrings ) {
+        return fileRowsStrings.map( row => row.replace( /\r/g, '' ).split( /,/g ).map( cell => cell.trim() ) );
     }
     /**
      * @param {Array<String[]>} fileCells2d
@@ -358,25 +377,18 @@ class Dataset {
         return fileCells2d.filter( row => row.length > 0 && row.some( cell => !!cell === true ) );
     }
     /**
-     * @param {String|String[]|ArrayBuffer|Buffer} fileContent
-     * @param {String} separator
+     * @param {String|ArrayBuffer} fileContent
      * @returns {Array<String[]>}
      */
-    static readFile( fileContent, separator ) {
+    static readFile( fileContent ) {
         /** @type {String} */
         let fileContentString;
         if ( fileContent instanceof ArrayBuffer ) {
             const decoder = new TextDecoder( 'utf-8' );
             fileContentString = decoder.decode( fileContent );
-        } else if ( fileContent instanceof Buffer ) {
-            fileContentString = fileContent.toString( 'utf-8' );
-        } else if ( Array.isArray( fileContent ) ) {
-            if ( typeof fileContent[0] === 'string' ) {
-                return Dataset._getNotEmptyLines( Dataset._getCells( fileContent, separator ) );
-            }
         }
         return Dataset._getNotEmptyLines(
-            Dataset._getCells( Dataset._getLines( fileContentString || fileContent ), separator )
+            Dataset._getCells( Dataset._getLines( fileContentString || fileContent ) )
         );
     }
     /**
@@ -512,7 +524,7 @@ class Dataset {
     }
     /**
      * @param {String[]} header
-     * @param {{types:{String:String|Function}}} [options]
+     * @param {DatasetHeaderOptions} [options]
      * @returns {DatasetHeader}
      */
     static parseHeader( header, options ) {
@@ -520,74 +532,34 @@ class Dataset {
     }
     /**
      * @param {String|RequestInfo} filePath
-     * @param {{
-     *   encoders?:String[],
-     *   excluded?:String|String[],
-     *   separator?:String,
-     *   types?:{[String]:String|Function},
-     *   slice?:{
-     *     start?:Number,
-     *     end?:Number
-     *   }
-     * }} [options] 
-     * @returns {Promise<Dataset>}
+     * @param {DatasetOptions} [options]
+     * @param {RequestInit} [requestOptions]
+     * @returns {Dataset}
      */
-    static load( filePath, options ) {
+    static load( filePath, options, requestOptions ) {
         return new Promise( ( resolve, reject ) => {
-            const fs = require( 'fs' );
-            fs.readFile( filePath, { encoding: 'utf-8', flag: 'r' }, ( err, fileContent ) => {
-                if ( err ) {
-                    reject( err );
-                } else {
-                    resolve( new Dataset( fileContent, options ) );
-                }
-            } );
+            fetch( filePath, requestOptions )
+                .then( response => {
+                    if ( response.status === 200 && response.ok ) {
+                        response
+                            .text()
+                            .then( fileContent => resolve( new Dataset( fileContent, options ) ) )
+                            .catch( reject );
+                    } else {
+                        reject( response );
+                    }
+                } )
+                .catch( reject );
         } );
     }
     /**
-     * @param {String|RequestInfo} filePath
-     * @param {{
-     *   encoders?:String[],
-     *   excluded?:String|String[],
-     *   separator?:String,
-     *   types?:{[String]:String|Function},
-     *   slice?:{
-     *     start?:Number,
-     *     end?:Number
-     *   }
-     * }} [options] 
-     * @returns {Promise<Dataset>}
-     */
-    static loadExternal( filePath, options ) {
-        const https = require( 'https' );
-        const fs = require( 'fs' );
-        return new Promise( ( resolve, reject ) => {
-            https.get( filePath, response => {
-                response.setEncoding( 'utf-8' );
-                let fileContent = '';
-                response.on( 'data', chunk => fileContent += chunk );
-                response.on( 'end', () => resolve( new Dataset( fileContent, options ) ) );
-                response.on( 'error', error => reject( error ) );
-            } );
-        } );
-    }
-    /**
-     * @param {String|String[]|ArrayBuffer|Buffer} fileContent 
-     * @param {{
-     *   encoders?:String[],
-     *   excluded?:String|String[],
-     *   separator?:String,
-     *   types?:{[String]:String|Function},
-     *   slice?:{
-     *     start?:Number,
-     *     end?:Number
-     *   }
-     * }} [options] 
+     * @param {String|ArrayBuffer} fileContent 
+     * @param {DatasetOptions} [options] 
      * @returns {Dataset}
      */
     constructor ( fileContent, options = {} ) {
-        const { excluded, encoders, types, separator, slice: { start, end } = {} } = options;
-        const [header, ...rows] = Dataset.readFile( fileContent, separator );
+        const { excluded, encoders, types, slice: { start, end } = {} } = options;
+        const [header, ...rows] = Dataset.readFile( fileContent );
         this.header = Dataset.parseHeader( header, { types, encoders } );
         this.rows = this.parseRows( start || end ? rows.slice( start || 0, end ) : rows, { excluded } );
     }
@@ -596,19 +568,6 @@ class Dataset {
      */
     get columns() {
         return this.header.columns;
-    }
-    /**
-     * @returns {{[String]:any}[]}
-     */
-    get objects() {
-        const { columns } = this;
-        return this.rows.map( row => {
-            const object = Object.create( null );
-            for ( let i = 0, { length } = columns; i < length; i += 1 ) {
-                object[columns[i]] = row[i];
-            }
-            return object;
-        } );
     }
     /**
      * @param {String} key
@@ -646,16 +605,17 @@ class Dataset {
      */
     removeColumns( keys ) {
         const _keys = Array.isArray( keys ) ? keys : [keys];
-        const indexesToRemove = this.header.removeColumns( keys );
+        const indexesToRemove = this.header.removeColumns( _keys );
         return new Promise( resolve => {
             this.mapAsync( row => row.filter( ( _, index ) => !indexesToRemove.includes( index ) ) )
                 .then( () => resolve( true ) );
         } );
     }
     /**
-     * @param {Array<String[]>} rows 
-     * @param {{excluded:String|String[]}} [options] 
-     * @returns {Array<Array>}
+     * @param {String[][]} rows 
+     * @param {Object} [options] 
+     * @param {String|String[]} options.excluded
+     * @returns {Array[]}
      */
     parseRows( rows, options = {} ) {
         const { excluded } = options;
@@ -678,7 +638,7 @@ class Dataset {
     }
     /**
      * @param {String} key
-     * @returns {Array<Array>}
+     * @returns {Array[]}
      */
     encodeColumn( key ) {
         const column = this.header.getColumnByKey( key );
@@ -694,7 +654,7 @@ class Dataset {
     }
     /**
      * @param {String[]} keys
-     * @returns {Array<Array>}
+     * @returns {Array[]}
      */
     encodeColumns( keys ) {
         const values = [];
@@ -718,29 +678,31 @@ class Dataset {
     }
     /**
      * @param {String} key
-     * @param {any} cell
+     * @param {*} cell
      * @returns {Number}
      */
     encodeCell( key, cell ) {
         const { type, encoder } = this.header.getColumnByKey( key );
         if ( encoder ) {
-            return cell = encoder.getEncoded( type( cell ) );
+            cell = encoder.getEncoded( type( cell ) );
+            return cell;
         }
     }
     /**
      * @param {String} key
      * @param {Array} cells
-     * @returns {Array<Number>}
+     * @returns {Number[]}
      */
     encodeCells( key, cells ) {
         const { type, encoder } = this.header.getColumnByKey( key );
         if ( encoder ) {
-            return cells = cells.map( cell => encoder.getEncoded( type( cell ) ) );
+            cells = cells.map( cell => encoder.getEncoded( type( cell ) ) );
+            return cells;
         }
     }
     /**
      * @param {String} key
-     * @returns {Array<Array>}
+     * @returns {Array[]}
      */
     decodeColumn( key ) {
         const { index, encoder } = this.header.getColumnByKey( key );
@@ -751,7 +713,7 @@ class Dataset {
     }
     /**
      * @param {String[]} keys
-     * @returns {Array<Array>}
+     * @returns {Array[]}
      */
     decodeColumns( keys ) {
         const values = [];
@@ -770,13 +732,14 @@ class Dataset {
     }
     /**
      * @param {String} key
-     * @param {any} cells
-     * @returns {any}
+     * @param {*} cells
+     * @returns {*}
      */
     decodeCell( key, cell ) {
         const encoder = this.header.getColumnEncoderByColumnKey( key );
         if ( encoder ) {
-            return cell = encoder.getDecoded( cell );
+            cell = encoder.getDecoded( cell );
+            return cell;
         }
     }
     /**
@@ -787,18 +750,22 @@ class Dataset {
     decodeCells( key, cells ) {
         const encoder = this.header.getColumnEncoderByColumnKey( key );
         if ( encoder ) {
-            return cells = cells.map( cell => encoder.getDecoded( cell ) );
+            cells = cells.map( cell => encoder.getDecoded( cell ) );
+            return cells;
         }
     }
     /**
-     * @param {any} object
+     * @typedef {Object} DatasetColumnStatistics
+     * @property {Number} *
+     * 
+     * @param {*} object
      * @param {String|String[]} keys 
-     * @returns {{[String]:Number}}
+     * @returns {DatasetColumnStatistics}
      */
     count( object, keys ) {
         const _keys = Array.isArray( keys ) ? keys : [keys];
-        const indexes = Object.create( null );
-        const results = Object.create( null );
+        const indexes = {};
+        const results = {};
         _keys.forEach( key => indexes[key] = this.header.getColumnIndexByColumnKey( key ) );
         _keys.forEach( key => results[key] = [] );
         this.forEach( ( element, index ) => {
@@ -812,14 +779,14 @@ class Dataset {
         return results;
     }
     /**
-     * @param {any} object
+     * @param {*} object
      * @param {String|String[]} keys 
-     * @returns {Promise<{[String]:Number}>}
+     * @returns {Promise<DatasetColumnStatistics>}
      */
     async countAsync( object, keys ) {
         const _keys = Array.isArray( keys ) ? keys : [keys];
-        const indexes = Object.create( null );
-        const results = Object.create( null );
+        const indexes = {};
+        const results = {};
         _keys.forEach( key => indexes[key] = this.header.getColumnIndexByColumnKey( key ) );
         _keys.forEach( key => results[key] = [] );
         return new Promise( resolve => {
@@ -1017,7 +984,8 @@ class Dataset {
                 this.rows[i] = callback( this.rows[i], i, thisArg );
             }
             return this.rows;
-        } else {
+        }
+        else {
             const rows = [];
             for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
                 rows[i] = callback( this.rows[i], i, thisArg );
@@ -1043,7 +1011,8 @@ class Dataset {
                 this.rows[i] = callback( this.rows[i], i, thisArg );
             }
             return this.rows;
-        } else {
+        }
+        else {
             const rows = [];
             for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
                 rows[i] = callback( this.rows[i], i, thisArg );
@@ -1051,7 +1020,6 @@ class Dataset {
             return rows;
         }
     }
-
 }
 
-module.exports = { Dataset, DatasetEncoder, DatasetHeader };
+export default { Dataset, DatasetEncoder, DatasetHeader };

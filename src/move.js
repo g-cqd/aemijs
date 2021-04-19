@@ -1,4 +1,4 @@
-/* eslint-env browser */
+/* eslint-env module */
 
 import { Easing } from './math.js';
 
@@ -18,7 +18,7 @@ export function smoothScrollTo ( event, selector, duration = 1000 ) {
     const target = document.querySelector( selector );
     if ( !( target instanceof HTMLElement ) ) {
         return;
-    };
+    }
     const startPosition = window.pageYOffset;
     const targetPosition = startPosition + target.getBoundingClientRect().top;
     const distance = targetPosition - startPosition;

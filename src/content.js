@@ -1,6 +1,7 @@
-/* eslint-env browser */
+/* eslint-env module */
 
 import { ExtendedWorker } from './multithread.js';
+import {getGlobal, ObjectForEach} from "./utils";
 
 export class MarkdownParser {
     /**
@@ -39,7 +40,7 @@ export class VariableManager {
             this.map = {};
 		}
 		else if ( gl.VariableManager !== this ) {
-			throw new Error( 'You are allowed to instanciate only one VariableManager per page' );
+			throw new Error( 'You are allowed to instantiate only one VariableManager per page' );
 		}
         return gl.VariableManager;
 	}
@@ -55,7 +56,7 @@ export class VariableManager {
         object = typeof object === 'object' ? object : {};
         const { exec, parser } = object;
 		if ( ( key in this.map ) || !( exec || parser ) ) {
-			return false;
+			return;
 		}
 		this.map[key] = { exec, parser };
 	}
@@ -154,7 +155,7 @@ export class VariableManager {
     static execute() {
         const gl = getGlobal();
         if ( !( 'VariableManager' in gl ) ) {
-            throw new Error( 'VariableManager was not instanciated.' );
+            throw new Error( 'VariableManager was not instantiated.' );
         }
         return gl.VariableManager.execute();
     }

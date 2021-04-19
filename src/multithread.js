@@ -1,4 +1,4 @@
-/* eslint-env browser */
+/* eslint-env module */
 
 import { getGlobal, newUID } from './utils.js';
 

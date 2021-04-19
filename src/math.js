@@ -1,4 +1,4 @@
-/* eslint-env browser */
+/* eslint-env module */
 
 /**
  * Set of timing functions
