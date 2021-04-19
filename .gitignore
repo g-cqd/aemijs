@@ -2,3 +2,7 @@
 node_modules
 node_modules/.cache
 node_modules/.cache/esm
+package-lock.json
+target
+.vscode
+.idea
