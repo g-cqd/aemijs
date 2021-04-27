@@ -1,7 +1,7 @@
 /* eslint-env module */
 
 import { ExtendedWorker } from './multithread.js';
-import {getGlobal, ObjectForEach} from "./utils";
+import { getGlobal, ObjectForEach } from "./utils.js";
 
 export class MarkdownParser {
     /**
