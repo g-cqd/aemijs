@@ -1,19 +1,19 @@
-import Content from './module/content.js';
-import Dataset from './module/dataset.js';
-import DOM from './module/dom.js';
-import Functional from './module/functional.js';
-import Loading from './module/loading.js';
-import Math from './module/math.js';
-import Move from './module/move.js';
-import MultiThread from './module/multithread.js';
-import Navigator from './module/navigator.js';
-import Performance from './module/perf.js';
-import Utils from './module/utils.js';
+import Content from './src/content.js';
+import Dataset from './src/dataset.js';
+import DOM from './src/dom.js';
+import Functional from './src/functional.js';
+import Loading from './src/loading.js';
+import Math from './src/math.js';
+import Move from './src/move.js';
+import MultiThread from './src/multithread.js';
+import Navigator from './src/navigator.js';
+import Performance from './src/perf.js';
+import Utils from './src/utils.js';
 
 export {
     Content,
-    Dataset,
     DOM,
+    Dataset,
     Functional,
     Loading,
     Math,

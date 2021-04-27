@@ -10,7 +10,7 @@ export function getGlobal() {
 
 /**
  * Test if in Browser Environment
- * @returns {Boolean} 
+ * @returns {Boolean}
  */
 export function isBrowser() {
     return typeof window !== 'undefined' || typeof self !== 'undefined';
@@ -80,13 +80,13 @@ export function ObjectMap( object, func ) {
 
 /**
  * Retrieve a unique identifier
- * 
+ *
  * @param {Number} length - Length of identifier to return
  * @returns {String} Unique Identifier
  */
 export function newUID( length = 16 ) {
     /**
-     * @param {Number} number 
+     * @param {Number} number
      * @returns {String}
      */
     function intToChar( number ) {
@@ -94,11 +94,12 @@ export function newUID( length = 16 ) {
         const mod = abs % 62;
         if ( mod < 10 ) {
             return String.fromCharCode( 48 + mod );
-        } else if ( mod < 36 ) {
-            return String.fromCharCode( 65 + mod - 10 );
-        } else {
-            return String.fromCharCode( 97 + mod - 36 );
         }
+        else if ( mod < 36 ) {
+            return String.fromCharCode( 65 + mod - 10 );
+        }
+        return String.fromCharCode( 97 + mod - 36 );
+
     }
     const src = new Uint8Array( length );
     window.crypto.getRandomValues( src );

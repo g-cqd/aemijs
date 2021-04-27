@@ -1,90 +1,96 @@
 /* eslint-env module */
 
 import { ExtendedWorker } from './multithread.js';
-import { getGlobal, ObjectForEach } from "./utils.js";
+import { getGlobal, ObjectForEach } from './utils.js';
 
 export class MarkdownParser {
+
     /**
-     * @param {String} MarkdownParserLibraryURL 
+     * @param {String} MarkdownParserLibraryURL
      */
-    constructor ( MarkdownParserLibraryURL ) {
+    constructor( MarkdownParserLibraryURL ) {
         this.worker = new ExtendedWorker(
-            function () {
+            () => {
                 globalThis.onmessage = function ( event ) {
                     globalThis.postMessage( { id: event.data.id, data: { data: marked( event.data.data ) } } );
-                }
+                };
             },
             { promise: true, importScripts: MarkdownParserLibraryURL || 'https://cdn.jsdelivr.net/npm/marked/marked.min.js' }
         );
     }
+
     /**
-     * @param {String} text 
+     * @param {String} text
      * @returns {Promise<String>} HTML Formatted Content
      */
     async parse( text ) {
         return ( await this.worker.postMessage( text ) ).data;
     }
+
     /**
      * @returns {void}
      */
     terminate() {
         this.worker.terminate();
     }
+
 }
 
 export class VariableManager {
-    constructor () {
+
+    constructor() {
         const gl = getGlobal();
         if ( !( 'VariableManager' in gl ) ) {
             gl.VariableManager = this;
             this.map = {};
-		}
-		else if ( gl.VariableManager !== this ) {
-			throw new Error( 'You are allowed to instantiate only one VariableManager per page' );
-		}
+        }
+        else if ( gl.VariableManager !== this ) {
+            throw new Error( 'You are allowed to instantiate only one VariableManager per page' );
+        }
         return gl.VariableManager;
-	}
-	/**
-	 * @param {String} key - Key to look for to be replaced by object
-	 * @param {{
-	 *   exec: Function,
-	 *   parser: Object
-	 * }} object - Function and parser to call on item found thanks to key
-	 * @returns {void}
-	 */
+    }
+
+    /**
+     * @param {String} key - Key to look for to be replaced by object
+     * @param {{
+     *   exec: Function,
+     *   parser: Object
+     * }} object - Function and parser to call on item found thanks to key
+     * @returns {void}
+     */
     register( key, object ) {
         object = typeof object === 'object' ? object : {};
         const { exec, parser } = object;
-		if ( ( key in this.map ) || !( exec || parser ) ) {
-			return;
-		}
-		this.map[key] = { exec, parser };
-	}
-	
+        if ( key in this.map || !( exec || parser ) ) {
+            return;
+        }
+        this.map[key] = { exec, parser };
+    }
+
     async execute() {
-        const body = document.body;
-        const nodes = [body];
+        const { body } = document;
+        const nodes = [ body ];
         const found = [];
-		while ( nodes.length > 0 ) {
-			const currentNode = nodes.shift();
-			const { length: l } = currentNode.childNodes.length;
-			for ( let i = 0; i < l; i += 1 ) {
-				const currentChild = currentNode.childNodes[i];
-				if ( [1, 11].includes( currentChild.nodeType ) ) {
-					nodes.unshift( currentChild );
-				}
-				else if ( [3, 8].includes( currentChild.nodeType ) ) {
-					if ( ( /{{(.|\n|\r)*}}/g ).test( currentChild.textContent ) ) {
-						found.push( currentChild.parentNode );
-					}
-				}
-			}
-		}
+        while ( nodes.length > 0 ) {
+            const currentNode = nodes.shift();
+            const { length: l } = currentNode.childNodes.length;
+            for ( let i = 0; i < l; i += 1 ) {
+                const currentChild = currentNode.childNodes[i];
+                if ( [ 1, 11 ].includes( currentChild.nodeType ) ) {
+                    nodes.unshift( currentChild );
+                }
+                else if ( [ 3, 8 ].includes( currentChild.nodeType ) ) {
+                    if ( ( /{{(.|\n|\r)*}}/g ).test( currentChild.textContent ) ) {
+                        found.push( currentChild.parentNode );
+                    }
+                }
+            }
+        }
 
         for ( const fo of found ) {
             let html = fo.innerHTML;
             ObjectForEach( this.map, ( key, value ) => {
-                const reg = new RegExp( `{{${key}:?(.|\n|\r)*?}}`, 'g' );
+                const reg = new RegExp( `{{${ key }:?(.|\n|\r)*?}}`, 'g' );
                 const res = reg.exec( html );
                 if ( res && res.length > 0 ) {
                     const fres = res.filter( e => e );
@@ -107,9 +113,10 @@ export class VariableManager {
             } );
         }
     }
+
     /**
-     * @param {Object} parser 
-     * @param {String} result 
+     * @param {Object} parser
+     * @param {String} result
      */
     static parse( key, parser, result ) {
         if ( result.length < 4 + key.length + 1 + 3 ) {
@@ -118,7 +125,7 @@ export class VariableManager {
         const trimmed = result.slice( 2 + key.length + 1, result.length - 2 );
         const cut = trimmed.split( /;/g );
         const obj = cut.reduce( ( prev, curr ) => {
-            const [key, value] = curr.split( /=/ );
+            const [ key, value ] = curr.split( /[=]/ );
             if ( key in parser ) {
                 if ( parser[key] === 'number' ) {
                     try {
@@ -152,6 +159,7 @@ export class VariableManager {
         }, {} );
         return obj;
     }
+
     static execute() {
         const gl = getGlobal();
         if ( !( 'VariableManager' in gl ) ) {
@@ -159,6 +167,7 @@ export class VariableManager {
         }
         return gl.VariableManager.execute();
     }
+
 }
 
 export default { MarkdownParser, VariableManager };

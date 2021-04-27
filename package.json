@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "eslint": "^7.25.0",
     "rollup": "^2.45.2",
     "terser": "^5.6.1"
   }
