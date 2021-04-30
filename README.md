@@ -10,7 +10,7 @@ Happy coding!
 
 See branches:
 
-- [esm-browser](https://github.com/aemi-dev/aemijs/tree/es-module)
-- [nodejs](https://github.com/aemi-dev/aemijs/tree/node-module)
+- [es-module](https://github.com/aemi-dev/aemijs/tree/es-module)
+- [node-module](https://github.com/aemi-dev/aemijs/tree/node-module)
 
 Soon.
