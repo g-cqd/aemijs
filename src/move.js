@@ -4,16 +4,16 @@ import { Easing } from './math.js';
 
 /**
  * Apply a smooth scroll animation when navigating through a page
- * 
+ *
  * #browser-only
- * 
- * @param {Event} event 
- * @param {String} selector 
- * @param {Number} duration 
+ *
+ * @param {Event} event
+ * @param {String} selector
+ * @param {Number} duration
  */
-export function smoothScrollTo ( event, selector, duration = 1000 ) {
+export function smoothScrollTo( event, selector, duration = 1000 ) {
     event.preventDefault();
-	event.stopPropagation();
+    event.stopPropagation();
     const { easeInOutCubic } = Easing;
     const target = document.querySelector( selector );
     if ( !( target instanceof HTMLElement ) ) {
@@ -23,12 +23,12 @@ export function smoothScrollTo ( event, selector, duration = 1000 ) {
     const targetPosition = startPosition + target.getBoundingClientRect().top;
     const distance = targetPosition - startPosition;
     let startTime = 0;
-    
+
     /**
-     * @param {Number} currentTime 
+     * @param {Number} currentTime
      */
     function animation( currentTime ) {
-        startTime = !!startTime ? startTime : currentTime;
+        startTime = startTime ? startTime : currentTime;
         const timeElapsed = currentTime - startTime;
         const run = easeInOutCubic( timeElapsed, startPosition, distance, duration );
         window.scrollTo( 0, run );

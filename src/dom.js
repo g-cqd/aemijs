@@ -1,6 +1,6 @@
 /* eslint-env module */
 
-import { ObjectForEach } from './utils.js';
+import { objectForEach } from './utils.js';
 
 /**
  * Check whether a class is present in an element's classlist
@@ -26,16 +26,16 @@ export function addClass( element, className, requireAnimationFrame ) {
     requireAnimationFrame = requireAnimationFrame || false;
     if ( element && element instanceof Element && !!className && typeof className === 'string' ) {
         if ( requireAnimationFrame ) {
-            return new Promise( function ( resolve ) {
-                window.requestAnimationFrame( function () {
+            return new Promise( resolve => {
+                window.requestAnimationFrame( () => {
                     element.classList.add( className );
                     resolve( element.classList );
                 } );
             } );
-        } else {
-            element.classList.add( className );
-            return element.classList;
         }
+        element.classList.add( className );
+        return element.classList;
+
     }
     throw new Error( 'Element and/or ClassName arguments are not correct.' );
 }
@@ -50,16 +50,16 @@ export function removeClass( element, className, requireAnimationFrame ) {
     requireAnimationFrame = requireAnimationFrame || false;
     if ( element && element instanceof Element && !!className && typeof className === 'string' ) {
         if ( requireAnimationFrame ) {
-            return new Promise( function ( resolve ) {
-                window.requestAnimationFrame( function () {
+            return new Promise( resolve => {
+                window.requestAnimationFrame( () => {
                     element.classList.remove( className );
                     resolve( element.classList );
                 } );
             } );
-        } else {
-            element.classList.remove( className );
-            return element.classList;
         }
+        element.classList.remove( className );
+        return element.classList;
+
     }
     throw new Error( 'Element and/or ClassName arguments are not correct.' );
 }
@@ -73,9 +73,9 @@ export function removeClass( element, className, requireAnimationFrame ) {
 export function toggleClass( element, className, requireAnimationFrame ) {
     requireAnimationFrame = requireAnimationFrame || false;
     if ( element && element instanceof Element && !!className && typeof className === 'string' ) {
-        return hasClass( element, className )
-            ? removeClass( element, className, requireAnimationFrame )
-            : addClass( element, className, requireAnimationFrame );
+        return hasClass( element, className ) ?
+            removeClass( element, className, requireAnimationFrame ) :
+            addClass( element, className, requireAnimationFrame );
     }
     throw new Error( 'Element and/or ClassName arguments are not correct.' );
 }
@@ -136,7 +136,7 @@ export function data( element, dataset, value ) {
 
 /**
  * Element Creation Shorthand
- * 
+ *
  * @param {Array.<ElementCreationShorthandInput|ElementCreationShorthandInput[]|Element|Element[]>} args
  * @returns {HTLMElement}
  */
@@ -173,7 +173,9 @@ export function ecs( ...args ) {
         if ( !!$namespace && typeof $namespace === 'string' ) {
             current = document.createElementNS( $namespace, !!$tag && typeof $tag === 'string' ? $tag : 'div' );
         }
-        else current = document.createElement( !!$tag && typeof $tag === 'string' ? $tag : 'div' );
+        else {
+            current = document.createElement( !!$tag && typeof $tag === 'string' ? $tag : 'div' );
+        }
         if ( id ) {
             current.id = id;
         }
@@ -185,13 +187,14 @@ export function ecs( ...args ) {
                 current.classList.add( ...$class );
             }
         }
-    } else {
+    }
+    else {
         current = document.createElement( 'div' );
     }
     if ( $attr ) {
-        ObjectForEach( $attr, function ( key, value ) {
+        objectForEach( $attr, ( key, value ) => {
             if ( value instanceof Promise ) {
-                value.then( function ( response ) {
+                value.then( response => {
                     attr( current, key, response );
                 } );
             }
@@ -201,9 +204,9 @@ export function ecs( ...args ) {
         } );
     }
     if ( $dataset ) {
-        ObjectForEach( $dataset, function ( key, value ) {
+        objectForEach( $dataset, ( key, value ) => {
             if ( value instanceof Promise ) {
-                value.then( function ( response ) {
+                value.then( response => {
                     current.dataset[key] = response;
                 } );
             }
@@ -218,9 +221,9 @@ export function ecs( ...args ) {
         }
     }
     if ( $style ) {
-        ObjectForEach( $style, function ( key, value ) {
+        objectForEach( $style, ( key, value ) => {
             if ( value instanceof Promise ) {
-                value.then( function ( response ) {
+                value.then( response => {
                     current.style[key] = response;
                 } );
             }
@@ -228,7 +231,7 @@ export function ecs( ...args ) {
         } );
     }
     if ( $childElements ) {
-        for ( const item of ( ( typeof $childElements === 'object' && Symbol.iterator in $childElements ) ? $childElements : [$childElements] ) ) {
+        for ( const item of typeof $childElements === 'object' && Symbol.iterator in $childElements ? $childElements : [ $childElements ] ) {
             if ( item instanceof Element ) {
                 current.appendChild( item );
             }
@@ -238,7 +241,7 @@ export function ecs( ...args ) {
             else if ( item instanceof Promise ) {
                 const template = document.createElement( 'template' );
                 current.appendChild( template );
-                item.then( function ( response ) {
+                item.then( response => {
                     if ( typeof response === 'string' ) {
                         template.outerHTML += response;
                         template.remove();
@@ -246,12 +249,12 @@ export function ecs( ...args ) {
                     else {
                         current.replaceChild( ecs( response ), template );
                     }
-                } ).catch( function ( _ ) {
+                } ).catch( _ => {
                     console.error( 'ecs error: ', _ );
                 } );
             }
-            else if ( ['number', 'bigint', 'boolean', 'symbol'].includes( typeof item ) ) {
-                current.innerHTML += `${item}`;
+            else if ( [ 'number', 'bigint', 'boolean', 'symbol' ].includes( typeof item ) ) {
+                current.innerHTML += `${ item }`;
             }
             else {
                 current.appendChild( ecs( item ) );
@@ -259,7 +262,7 @@ export function ecs( ...args ) {
         }
     }
     if ( $actions ) {
-        ObjectForEach( $actions, function ( key, values ) {
+        objectForEach( $actions, ( key, values ) => {
             const filteredKey = key.split( /\_\$/ );
             if ( filteredKey.length > 1 ) {
                 current[filteredKey[0]]( ...values );
@@ -275,10 +278,10 @@ export function ecs( ...args ) {
  * Execute ecs in an inline script an replace script by ecs' result
  * @param {Array.<ElementCreationShorthandInput|ElementCreationShorthandInput[]|Element|Element[]>} args
  */
-export function ecsr(...args) {
+export function ecsr( ...args ) {
     const { currentScript } = document;
     const { parentElement } = currentScript;
-    if ( ![document.head, document.documentElement].includes( parentElement ) ) {
+    if ( ![ document.head, document.documentElement ].includes( parentElement ) ) {
         parentElement.replaceChild( ecs( ...args ), currentScript );
     }
 }

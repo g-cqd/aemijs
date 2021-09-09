@@ -1,7 +1,7 @@
 /* eslint-env module */
 
+import { getGlobal, objectForEach } from './utils.js';
 import { ExtendedWorker } from './multithread.js';
-import { getGlobal, ObjectForEach } from './utils.js';
 
 export class MarkdownParser {
 
@@ -11,7 +11,7 @@ export class MarkdownParser {
     constructor( MarkdownParserLibraryURL ) {
         this.worker = new ExtendedWorker(
             () => {
-                globalThis.onmessage = function ( event ) {
+                globalThis.onmessage = function onmessage( event ) {
                     globalThis.postMessage( { id: event.data.id, data: { data: marked( event.data.data ) } } );
                 };
             },
@@ -47,15 +47,18 @@ export class VariableManager {
         else if ( gl.VariableManager !== this ) {
             throw new Error( 'You are allowed to instantiate only one VariableManager per page' );
         }
-        return gl.VariableManager;
     }
 
     /**
+     * @typedef {Object} VariableHandler
+     * @property {Function} exec
+     * @property {Object} parser
+     *
+     */
+
+    /**
      * @param {String} key - Key to look for to be replaced by object
-     * @param {{
-     *   exec: Function,
-     *   parser: Object
-     * }} object - Function and parser to call on item found thanks to key
+     * @param {VariableHandler} object - Function and parser to call on item found thanks to key
      * @returns {void}
      */
     register( key, object ) {
@@ -80,7 +83,7 @@ export class VariableManager {
                     nodes.unshift( currentChild );
                 }
                 else if ( [ 3, 8 ].includes( currentChild.nodeType ) ) {
-                    if ( ( /{{(.|\n|\r)*}}/g ).test( currentChild.textContent ) ) {
+                    if ( ( /\{\{(?:.|\n|\r)*\}\}/gu ).test( currentChild.textContent ) ) {
                         found.push( currentChild.parentNode );
                     }
                 }
@@ -89,8 +92,8 @@ export class VariableManager {
 
         for ( const fo of found ) {
             let html = fo.innerHTML;
-            ObjectForEach( this.map, ( key, value ) => {
-                const reg = new RegExp( `{{${ key }:?(.|\n|\r)*?}}`, 'g' );
+            objectForEach( this.map, ( key, value ) => {
+                const reg = new RegExp( `{{${ key }:?(?:.|\n|\r)*?}}`, 'gu' );
                 const res = reg.exec( html );
                 if ( res && res.length > 0 ) {
                     const fres = res.filter( e => e );
@@ -115,6 +118,7 @@ export class VariableManager {
     }
 
     /**
+     * @param {String} key
      * @param {Object} parser
      * @param {String} result
      */
@@ -123,32 +127,32 @@ export class VariableManager {
             return {};
         }
         const trimmed = result.slice( 2 + key.length + 1, result.length - 2 );
-        const cut = trimmed.split( /;/g );
-        const obj = cut.reduce( ( prev, curr ) => {
-            const [ key, value ] = curr.split( /[=]/ );
-            if ( key in parser ) {
-                if ( parser[key] === 'number' ) {
+        const cut = trimmed.split( /;/gu );
+        return cut.reduce( ( prev, curr ) => {
+            const [ prop, value ] = curr.split( /[=]/u );
+            if ( prop in parser ) {
+                if ( parser[prop] === 'number' ) {
                     try {
-                        prev[key] = Number( value );
+                        prev[prop] = Number( value );
                     }
                     catch ( _ ) {
                         console.error( _ );
                     }
                 }
-                else if ( parser[key] === 'symbol' ) {
+                else if ( parser[prop] === 'symbol' ) {
                     try {
-                        prev[key] = Symbol( value );
+                        prev[prop] = Symbol( value );
                     }
                     catch ( _ ) {
                         console.error( _ );
                     }
                 }
-                else if ( parser[key] === 'string' ) {
-                    prev[key] = value.toString();
+                else if ( parser[prop] === 'string' ) {
+                    prev[prop] = value.toString();
                 }
-                else if ( parser[key] === 'boolean' ) {
+                else if ( parser[prop] === 'boolean' ) {
                     try {
-                        prev[key] = Boolean( value );
+                        prev[prop] = Boolean( value );
                     }
                     catch ( _ ) {
                         console.error( _ );
@@ -157,7 +161,6 @@ export class VariableManager {
             }
             return prev;
         }, {} );
-        return obj;
     }
 
     static execute() {

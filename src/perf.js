@@ -5,10 +5,11 @@ import { getGlobal, newUID } from './utils.js';
  * Benchmark JavaScript Code
  */
 export class Benchmark {
+
     /**
      * @param {{logging:Boolean}} [options] - Options passed to Benchmark
      */
-    constructor ( options = {} ) {
+    constructor( options = {} ) {
         this.perf = getGlobal().performance;
         this.options = {
             _logging: options.logging || false,
@@ -21,36 +22,42 @@ export class Benchmark {
         this.testPool = new Map();
         this.ticks = [];
     }
+
     /**
      * @returns {String}
      */
-    get uid() {
+    static get uid() {
         return newUID( 10 );
     }
+
     /**
      * @returns {String}
      */
     set last( value ) {
-        return this.options._last = value;
+        this.options._last = value;
     }
+
     /**
      * @returns {String}
      */
     get last() {
         return this.options._last;
     }
+
     /**
      * @returns {Boolean}
      */
     get logging() {
         return this.options._logging;
     }
+
     /**
      * @returns {Number|undefined}
      */
     get iterations() {
         return this.options._iterations;
     }
+
     /**
      * @param {Number} value
      * @returns {void}
@@ -58,22 +65,23 @@ export class Benchmark {
     set iterations( value ) {
         this.options._iterations = value;
     }
+
     /**
-     * 
-     * @param {String} label 
-     * @param {Function} func 
-     * @param  {...any} args 
+     *
+     * @param {String} label
+     * @param {Function} func
+     * @param  {...any} args
      * @returns {Benchmark}
      */
     add( label, func, ...args ) {
-        const { uid } = this;
+        const { uid } = Benchmark;
         this.last = uid;
         this.match[uid] = label;
         this.pool.set( uid, () => {
             let end;
             let elapsed = 0;
             let i = 0;
-            let test = this.testPool.get( uid );
+            const test = this.testPool.get( uid );
             let start;
             if ( test ) {
                 do {
@@ -81,10 +89,10 @@ export class Benchmark {
                     const result = func( ...args );
                     elapsed += this.perf.now() - start;
                     if ( !test( result ) ) {
-                        console.group( `Test Failed - ${label}` );
+                        console.group( `Test Failed - ${ label }` );
                         console.error( 'Test Function', test );
                         console.error( 'Tested Result', result );
-                        console.groupEnd( `Test Failed - ${label}` );
+                        console.groupEnd( `Test Failed - ${ label }` );
                         throw new Error( 'Test failed.' );
                     }
                 } while ( ( i++, elapsed < 5000 ) );
@@ -98,19 +106,20 @@ export class Benchmark {
             }
             const ops = i / ( elapsed / 1000 );
             const result = { ops, elapsed, iterations: i };
-            console.log( `Func ${label}\n\t> ${ops.toFixed( 3 )} op/s\n\t> ${i} op` );
+            console.log( `Func ${ label }\n\t> ${ ops.toFixed( 3 ) } op/s\n\t> ${ i } op` );
             this.metrics.set( uid, result );
             return result;
         } );
         return this;
     }
+
     /**
      * @callback callback
      * @param {any} result
      * @returns {Boolean}
      */
     /**
-     * @param {callback} func 
+     * @param {callback} func
      */
     test( func ) {
         const { last: uid } = this;
@@ -118,16 +127,18 @@ export class Benchmark {
         this.last = undefined;
         return this;
     }
+
     /**
      * @returns {void}
      */
     start() {
         const now = this.perf.now();
         if ( this.logging ) {
-            console.warn( `Started ${now} ms after page load.` );
+            console.warn( `Started ${ now } ms after page load.` );
         }
         this.ticks.push( now );
     }
+
     /**
      * @returns {Number}
      */
@@ -135,11 +146,12 @@ export class Benchmark {
         const now = this.perf.now();
         const elapsed = now - this.ticks[this.ticks.length - 1];
         if ( this.logging ) {
-            console.log( `Lap : ${elapsed} ms` );
+            console.log( `Lap : ${ elapsed } ms` );
         }
         this.ticks.push( now );
         return elapsed;
     }
+
     /**
      * @returns {Number}
      */
@@ -149,31 +161,33 @@ export class Benchmark {
         const elapsed = now - this.ticks[0];
         if ( this.logging ) {
             if ( lastLap !== elapsed ) {
-                console.log( `Lap : ${lastLap} ms` );
+                console.log( `Lap : ${ lastLap } ms` );
             }
-            console.log( `Total : ${elapsed} ms` );
-            console.warn( `Ended ${now} ms after page load.` );
+            console.log( `Total : ${ elapsed } ms` );
+            console.warn( `Ended ${ now } ms after page load.` );
         }
         this.ticks.push( now );
         return elapsed;
     }
+
     /**
      * @returns {Benchmark}
      */
     run() {
-        const keys = [...( this.pool.keys() )];
-        const values = [...( this.pool.values() )];
+        const keys = [ ...this.pool.keys() ];
+        const values = [ ...this.pool.values() ];
         console.group( 'Execution' );
         const results = values.map( func => func() );
         console.groupEnd();
-        const sortMap = results.map( ( { ops }, index ) => [keys[index], ops] ).sort( ( [$0, a], [$1, b] ) => b - a );
+        const sortMap = results.map( ( { ops }, index ) => [ keys[index], ops ] ).sort( ( [ $0, a ], [ $1, b ] ) => b - a );
         console.group( 'Results' );
-        sortMap.forEach( ( [key, ops], index ) => {
-            console.log( `#${index + 1} -- Func ${this.match[key]}\n\t> ${ops.toFixed( 3 )} op/s` );
+        sortMap.forEach( ( [ key, ops ], index ) => {
+            console.log( `#${ index + 1 } -- Func ${ this.match[key] }\n\t> ${ ops.toFixed( 3 ) } op/s` );
         } );
         console.groupEnd();
         return this;
     }
+
 }
 
 export default { Benchmark };

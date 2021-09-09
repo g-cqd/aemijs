@@ -1,6 +1,6 @@
 import Content from './src/content.js';
-import Dataset from './src/dataset.js';
 import DOM from './src/dom.js';
+import Dataset from './src/dataset.js';
 import Functional from './src/functional.js';
 import Loading from './src/loading.js';
 import Math from './src/math.js';

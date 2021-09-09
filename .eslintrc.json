@@ -108,15 +108,12 @@
             "error",
             "never"
         ],
-        "func-name-matching": "error",
+        "func-name-matching": "warn",
         "func-names": [
             "error",
             "as-needed"
         ],
-        "func-style": [
-            "error",
-            "expression"
-        ],
+        "func-style": "off",
         "function-call-argument-newline": [
             "error",
             "consistent"

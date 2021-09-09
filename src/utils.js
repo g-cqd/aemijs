@@ -45,7 +45,7 @@ export function isWorker() {
  * @param {callback} func - Function to apply over each entry of passed object
  * @returns {void}
  */
-export function ObjectForEach( object, func ) {
+export function objectForEach( object, func ) {
     let index = 0;
     for ( const key in object ) {
         if ( Object.prototype.hasOwnProperty.call( object, key ) ) {
@@ -67,7 +67,7 @@ export function ObjectForEach( object, func ) {
  * @param {callback} func - Function to apply over each entry of passed object
  * @returns {Object}
  */
-export function ObjectMap( object, func ) {
+export function objectMap( object, func ) {
     const newObject = {};
     let index = 0;
     for ( const key in object ) {
@@ -103,11 +103,10 @@ export function newUID( length = 16 ) {
     }
     const src = new Uint8Array( length );
     window.crypto.getRandomValues( src );
-    const res = Array( length )
+    return Array( length )
         .fill( 0 )
         .map( ( _, i ) => intToChar( src[i] ) )
         .join( '' );
-    return res;
 }
 
 export default {
@@ -115,7 +114,7 @@ export default {
     isWorker,
     isNode,
     getGlobal,
-    ObjectForEach,
-    ObjectMap,
+    objectForEach,
+    objectMap,
     newUID
 };

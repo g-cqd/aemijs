@@ -1,9 +1,11 @@
 /* eslint-env module */
 
 export class DatasetEncoder {
-    constructor () {
+
+    constructor() {
         this.values = [];
     }
+
     /**
      * @param {any} value
      * @returns {Number}
@@ -12,11 +14,12 @@ export class DatasetEncoder {
         const index = this.values.indexOf( value );
         if ( index > -1 ) {
             return index;
-        } else {
-            this.length = this.values.push( value );
-            return this.length - 1;
         }
+        this.length = this.values.push( value );
+        return this.length - 1;
+
     }
+
     /**
      * @param {Number} encodedIndex
      * @returns {any}
@@ -24,12 +27,14 @@ export class DatasetEncoder {
     getDecoded( encodedIndex ) {
         if ( this.length <= encodedIndex ) {
             throw new Error();
-        } else {
+        }
+        else {
             return this.values[encodedIndex];
         }
     }
+
     /**
-     * @param {any} value 
+     * @param {any} value
      * @returns {Array<Number>}
      */
     getOneHotEncoded( value ) {
@@ -41,29 +46,33 @@ export class DatasetEncoder {
         }
         throw new Error();
     }
+
     /**
-     * @param {Number} index 
+     * @param {Number} index
      * @returns {Array<0|1>}
      */
     getOneHotEncodedByIndex( index ) {
         const { length } = this.values;
         if ( index >= length || index < 0 ) {
             throw new Error();
-        } else {
+        }
+        else {
             const array = Array( length ).fill( 0 );
             array[index] = 1;
             return array;
         }
     }
+
 }
 
 export class DatasetHeader {
+
     /**
      * @typedef {Object} DatasetHeaderOptions
      * @property {Object} [types]
      * @property {String|Function} types.*
      * @property {String|String[]} [encoders]
-     * 
+     *
      * @typedef {Object} DatasetHeaderColumnInfo
      * @property {String} key
      * @property {Number} index
@@ -75,7 +84,7 @@ export class DatasetHeader {
      * @param {String[]} array
      * @param {DatasetHeaderOptions} [options]
      */
-    constructor ( array, options ) {
+    constructor( array, options ) {
         /** @type {Map<Number,String>} */
         this.keys = new Map();
         /** @type {Map<String,Function>} */
@@ -91,11 +100,12 @@ export class DatasetHeader {
             this.parseFromArray( array, options );
         }
     }
+
     /**
      * @returns {String[]}
      */
     get columns() {
-        return [...this.indexes.keys()];
+        return [ ...this.indexes.keys() ];
     }
 
     /**
@@ -105,16 +115,17 @@ export class DatasetHeader {
     getColumnByKey( key ) {
         if ( this.indexes.has( key ) ) {
             return {
-                key: key,
+                key,
                 index: this.indexes.get( key ),
-                ... this.types.has( key ) ? { type: this.types.get( key ) } : {},
-                ... this.encoders.has( key ) ? { encoder: this.encoders.get( key ) } : {}
+                ...this.types.has( key ) ? { type: this.types.get( key ) } : {},
+                ...this.encoders.has( key ) ? { encoder: this.encoders.get( key ) } : {}
             };
         }
-        else {
-            return undefined;
-        }
+
+        return undefined;
+
     }
+
     /**
      * @param {Number} index
      * @returns {DatasetHeaderColumnInfo}
@@ -123,15 +134,16 @@ export class DatasetHeader {
         if ( this.keys.has( index ) ) {
             const key = this.keys.get( index );
             return {
-                key: key,
-                index: index,
-                ... this.types.has( key ) ? { type: this.types.get( key ) } : {},
-                ... this.encoders.has( key ) ? { encoder: this.encoders.get( key ) } : {}
+                key,
+                index,
+                ...this.types.has( key ) ? { type: this.types.get( key ) } : {},
+                ...this.encoders.has( key ) ? { encoder: this.encoders.get( key ) } : {}
             };
-        } else {
-            return undefined;
         }
+        return undefined;
+
     }
+
     /**
      * @param {Number} index
      * @returns {String}
@@ -139,6 +151,7 @@ export class DatasetHeader {
     getColumnKeyByColumnIndex( index ) {
         return this.keys.get( index );
     }
+
     /**
      * @param {String} key
      * @returns {Number}
@@ -146,6 +159,7 @@ export class DatasetHeader {
     getColumnIndexByColumnKey( key ) {
         return this.indexes.get( key );
     }
+
     /**
      * @param {String} key
      * @return {DatasetEncoder}
@@ -155,6 +169,7 @@ export class DatasetHeader {
         this.encoders.set( key, encoder );
         return encoder;
     }
+
     /**
      * @param {String} key
      * @returns {DatasetEncoder}
@@ -162,6 +177,7 @@ export class DatasetHeader {
     getColumnEncoderByColumnKey( key ) {
         return this.encoders.get( key );
     }
+
     /**
      * @param {Number} index
      * @returns {DatasetEncoder}
@@ -172,6 +188,7 @@ export class DatasetHeader {
         this.encoders.set( key, encoder );
         return encoder;
     }
+
     /**
      * @param {Number} index
      * @returns {DatasetEncoder}
@@ -179,6 +196,7 @@ export class DatasetHeader {
     getColumnEncoderByColumnIndex( index ) {
         return this.encoders.get( this.keys.get( index ) );
     }
+
     /**
      * @param {String} key
      * @returns {Function}
@@ -186,6 +204,7 @@ export class DatasetHeader {
     getColumnTypeByColumnKey( key ) {
         return this.types.get( key );
     }
+
     /**
      * @param {String} key
      * @param {String|Function} type
@@ -193,6 +212,7 @@ export class DatasetHeader {
     setColumnTypeByColumnKey( key, type ) {
         this.types.set( key, Dataset.parseType( type ) );
     }
+
     /**
      * @param {Number} index
      * @returns {Function}
@@ -200,6 +220,7 @@ export class DatasetHeader {
     getColumnTypeByColumnIndex( index ) {
         return this.types.get( this.keys.get( index ) );
     }
+
     /**
      * @param {Number} index
      * @param {String|Function} type
@@ -207,6 +228,7 @@ export class DatasetHeader {
     setColumnTypeByColumnIndex( index, type ) {
         this.types.set( this.keys.get( index ), Dataset.parseType( type ) );
     }
+
     /**
      * @param {String} key
      * @returns {Boolean}
@@ -214,6 +236,7 @@ export class DatasetHeader {
     hasColumn( key ) {
         return this.indexes.has( key );
     }
+
     /**
      * @param {Number} index
      * @returns {Boolean}
@@ -221,6 +244,7 @@ export class DatasetHeader {
     doesIndexExist( index ) {
         return this.keys.has( index );
     }
+
     /**
      * @param {String} key
      * @param {String|Function} type
@@ -235,12 +259,13 @@ export class DatasetHeader {
             this.encoders.set( key, new DatasetEncoder( key ) );
         }
     }
+
     /**
      * @param {String[]} keys
      * @returns {Number[]}
      */
     removeColumns( keys ) {
-        const _keys = Array.isArray( keys ) ? keys : [keys];
+        const _keys = Array.isArray( keys ) ? keys : [ keys ];
         const oldIndexes = [];
         for ( const key of _keys ) {
             this.types.delete( key );
@@ -265,6 +290,7 @@ export class DatasetHeader {
         this.nextIndex = newIndex;
         return oldIndexes;
     }
+
     /**
      * @param {String[]} array
      * @param {DatasetHeaderOptions} [options]
@@ -277,6 +303,7 @@ export class DatasetHeader {
         }
         this.nextIndex = array.length;
     }
+
     /**
      * @param {String[]} array
      * @param {DatasetHeaderOptions} [options]
@@ -291,6 +318,7 @@ export class DatasetHeader {
         instance.nextIndex = array.length;
         return instance;
     }
+
 }
 
 export class Dataset {
@@ -302,22 +330,23 @@ export class Dataset {
      * @property {String|String[]} [encoders]
      * @property {String|String[]} [excluded]
      */
-    
+
     /**
-     * @param {Array} elements 
-     * @param {Boolean} [fundamental] 
+     * @param {Array} elements
+     * @param {Boolean} [fundamental]
      * @returns {void}
      */
     static log( elements, fundamental = true ) {
-        console.log( `\n<-- ${elements.length} ROWS -->` );
+        console.log( `\n<-- ${ elements.length } ROWS -->` );
         if ( fundamental ) {
             if ( elements.length > 10 ) {
                 const first = elements.slice( 0, 5 );
                 const last = elements.slice( -5 );
                 for ( const item of first ) {
                     if ( Array.isArray( item[0] ) ) {
-                        console.log( '[ ', item.map( k => Array.isArray( k ) ? `\n  [ ${k.join( ', ' )} ]` : k ).join( ', ' ), '\n]' );
-                    } else {
+                        console.log( '[ ', item.map( k =>  Array.isArray( k ) ? `\n  [ ${ k.join( ', ' ) } ]` : k  ).join( ', ' ), '\n]' );
+                    }
+                    else {
                         console.log( '[ ', item.join( ', ' ), ' ]' );
                     }
                 }
@@ -327,20 +356,24 @@ export class Dataset {
                 for ( const item of last ) {
                     if ( Array.isArray( item[0] ) ) {
                         console.log( '[ ', item.map( k => Array.isArray( k ) ? `\n  [ ${k.join( ', ' )} ]` : k ).join( ', ' ), '\n]' );
-                    } else {
-                        console.log( '[ ', item.join( ', ' ), ' ]' );
                     }
-                }
-            } else {
-                for ( const item of elements ) {
-                    if ( Array.isArray( item[0] ) ) {
-                        console.log( '[ ', item.map( k => Array.isArray( k ) ? `\n  [ ${k.join( ', ' )} ]` : k ).join( ', ' ), '\n]' );
-                    } else {
+                    else {
                         console.log( '[ ', item.join( ', ' ), ' ]' );
                     }
                 }
             }
-        } else {
+            else {
+                for ( const item of elements ) {
+                    if ( Array.isArray( item[0] ) ) {
+                        console.log( '[ ', item.map( k => Array.isArray( k ) ? `\n  [ ${k.join( ', ' )} ]` : k ).join( ', ' ), '\n]' );
+                    }
+                    else {
+                        console.log( '[ ', item.join( ', ' ), ' ]' );
+                    }
+                }
+            }
+        }
+        else {
             const first = elements.slice( 0, 5 );
             const last = elements.slice( -5 );
             for ( const item of first ) {
@@ -353,8 +386,9 @@ export class Dataset {
                 console.log( item );
             }
         }
-        console.log( `<-- ${elements.length} ROWS -->\n` );
+        console.log( `<-- ${ elements.length } ROWS -->\n` );
     }
+
     /**
      * @param {String} fileContentString
      * @returns {String[]}
@@ -362,13 +396,16 @@ export class Dataset {
     static _getLines( fileContentString ) {
         return fileContentString.split( /\n/g );
     }
+
     /**
      * @param {String[]} fileRowsStrings
      * @returns {Array<String[]>}
      */
     static _getCells( fileRowsStrings ) {
-        return fileRowsStrings.map( row => row.replace( /\r/g, '' ).split( /,/g ).map( cell => cell.trim() ) );
+        return fileRowsStrings.map( row => row.replace( /\r/g, '' ).split( /,/g )
+            .map( cell => cell.trim() ) );
     }
+
     /**
      * @param {Array<String[]>} fileCells2d
      * @returns {Array<String[]>}
@@ -376,6 +413,7 @@ export class Dataset {
     static _getNotEmptyLines( fileCells2d ) {
         return fileCells2d.filter( row => row.length > 0 && row.some( cell => !!cell === true ) );
     }
+
     /**
      * @param {String|ArrayBuffer} fileContent
      * @returns {Array<String[]>}
@@ -391,6 +429,7 @@ export class Dataset {
             Dataset._getCells( Dataset._getLines( fileContentString || fileContent ) )
         );
     }
+
     /**
      * @param {Array<Number>} indexes
      * @param {Map<any,Map>|Map<any,any[]>|Array<any,Array[]>|Array[]} mappedData
@@ -403,11 +442,11 @@ export class Dataset {
      */
     static _flat( indexes, mappedData, options = {} ) {
         const { sortFunctionMap, filterFunctionMap, groupByFilterFunctionMap } = options;
-        const [first, ...rest] = indexes;
+        const [ first, ...rest ] = indexes;
         if ( first !== undefined ) {
             let flat = mappedData;
             if ( flat instanceof Map ) {
-                flat = [...mappedData.keys()];
+                flat = [ ...mappedData.keys() ];
                 if ( sortFunctionMap && sortFunctionMap.has( first ) ) {
                     let sortFunc;
                     if ( sortFunc = sortFunctionMap.get( first ) ) {
@@ -429,7 +468,8 @@ export class Dataset {
                     }
                 }
                 return flat;
-            } else if ( Array.isArray( flat ) ) {
+            }
+            else if ( Array.isArray( flat ) ) {
                 if ( filterFunctionMap && filterFunctionMap.has( first ) ) {
                     let filterFunc;
                     if ( filterFunc = filterFunctionMap.get( first ) ) {
@@ -448,6 +488,7 @@ export class Dataset {
         }
         return mappedData;
     }
+
     /**
      * @param {Array} rows
      * @param {Number[]} keys
@@ -455,12 +496,12 @@ export class Dataset {
      */
     static _groupBy( rows, keys ) {
 
-        const [firstIndex, ...rest] = keys;
+        const [ firstIndex, ...rest ] = keys;
 
         if ( firstIndex !== undefined && firstIndex >= 0 ) {
 
             /** @type Map */
-            const result = rows.reduce( function ( acc, curr ) {
+            const result = rows.reduce( ( acc, curr ) => {
                 const key = curr[firstIndex];
                 const list = acc.has( key ) ? acc.get( key ) : [];
                 list.push( curr );
@@ -468,7 +509,7 @@ export class Dataset {
             }, new Map() );
 
             if ( rest.length > 0 ) {
-                for ( const [key, values] of result.entries() ) {
+                for ( const [ key, values ] of result.entries() ) {
                     result.set( key, Dataset._groupBy( values, rest ) );
                 }
             }
@@ -478,6 +519,7 @@ export class Dataset {
         }
         return rows;
     }
+
     /**
      * @param {String|Function} [type]
      * @returns {Function}
@@ -487,7 +529,9 @@ export class Dataset {
             return value === '' ? undefined : value;
         }
         if ( typeof type === 'function' ) {
-            return function to_custom( value ) { return type( value ); };
+            return function to_custom( value ) {
+                return type( value );
+            };
         }
         switch ( type ) {
             case 'number': {
@@ -504,7 +548,7 @@ export class Dataset {
             case 'boolean': {
                 return function to_boolean( value ) {
                     const new_value = to_same( value );
-                    return isNaN( +new_value ) ? Boolean( new_value ) : !! +new_value;
+                    return isNaN( +new_value ) ? Boolean( new_value ) : !!+new_value;
                 };
             }
             case 'object': {
@@ -522,6 +566,7 @@ export class Dataset {
             }
         }
     }
+
     /**
      * @param {String[]} header
      * @param {DatasetHeaderOptions} [options]
@@ -530,6 +575,7 @@ export class Dataset {
     static parseHeader( header, options ) {
         return new DatasetHeader( header, options );
     }
+
     /**
      * @param {String|RequestInfo} filePath
      * @param {DatasetOptions} [options]
@@ -545,30 +591,34 @@ export class Dataset {
                             .text()
                             .then( fileContent => resolve( new Dataset( fileContent, options ) ) )
                             .catch( reject );
-                    } else {
+                    }
+                    else {
                         reject( response );
                     }
                 } )
                 .catch( reject );
         } );
     }
+
     /**
-     * @param {String|ArrayBuffer} fileContent 
-     * @param {DatasetOptions} [options] 
+     * @param {String|ArrayBuffer} fileContent
+     * @param {DatasetOptions} [options]
      * @returns {Dataset}
      */
-    constructor ( fileContent, options = {} ) {
+    constructor( fileContent, options = {} ) {
         const { excluded, encoders, types, slice: { start, end } = {} } = options;
-        const [header, ...rows] = Dataset.readFile( fileContent );
+        const [ header, ...rows ] = Dataset.readFile( fileContent );
         this.header = Dataset.parseHeader( header, { types, encoders } );
         this.rows = this.parseRows( start || end ? rows.slice( start || 0, end ) : rows, { excluded } );
     }
+
     /**
      * @returns {String[]}
      */
     get columns() {
         return this.header.columns;
     }
+
     /**
      * @param {String} key
      * @param {String|Function} typeSetting
@@ -580,14 +630,16 @@ export class Dataset {
             row[index] = type( row[index] );
         } );
     }
+
     /**
      * @param {Array<Array<String,String|Function>>} types
      */
     setTypes( types ) {
-        for ( const [key, typeSetting] of types ) {
+        for ( const [ key, typeSetting ] of types ) {
             this.setType( key, typeSetting );
         }
     }
+
     /**
      * @param {String} key
      * @returns {Array}
@@ -599,21 +651,23 @@ export class Dataset {
         }
         throw new Error();
     }
+
     /**
      * @param {String|String[]} keys
      * @returns {void}
      */
     removeColumns( keys ) {
-        const _keys = Array.isArray( keys ) ? keys : [keys];
+        const _keys = Array.isArray( keys ) ? keys : [ keys ];
         const indexesToRemove = this.header.removeColumns( _keys );
         return new Promise( resolve => {
             this.mapAsync( row => row.filter( ( _, index ) => !indexesToRemove.includes( index ) ) )
                 .then( () => resolve( true ) );
         } );
     }
+
     /**
-     * @param {String[][]} rows 
-     * @param {Object} [options] 
+     * @param {String[][]} rows
+     * @param {Object} [options]
      * @param {String|String[]} options.excluded
      * @returns {Array[]}
      */
@@ -623,19 +677,18 @@ export class Dataset {
         if ( excluded ) {
             indexesToRemove.push( ...this.header.removeColumns( excluded ) );
         }
-        return rows.map( cells => {
-            return cells
-                .filter( ( _, i ) => !indexesToRemove.includes( i ) )
-                .map( ( cell, i ) => {
-                    const { encoder, type } = this.header.getColumnByIndex( i );
-                    if ( encoder ) {
-                        return encoder.getEncoded( type( cell ) );
-                    } else {
-                        return type( cell );
-                    }
-                } );
-        } );
+        return rows.map( cells => cells
+            .filter( ( _, i ) => !indexesToRemove.includes( i ) )
+            .map( ( cell, i ) => {
+                const { encoder, type } = this.header.getColumnByIndex( i );
+                if ( encoder ) {
+                    return encoder.getEncoded( type( cell ) );
+                }
+                return type( cell );
+
+            } ) );
     }
+
     /**
      * @param {String} key
      * @returns {Array[]}
@@ -652,6 +705,7 @@ export class Dataset {
         }
         return this.rows;
     }
+
     /**
      * @param {String[]} keys
      * @returns {Array[]}
@@ -666,16 +720,17 @@ export class Dataset {
                 encoder = this.header.registerColumnEncoderByColumnKey( key );
             }
             if ( encoder && index ) {
-                values.push( [index, type, encoder] );
+                values.push( [ index, type, encoder ] );
             }
         }
-        for ( const [index, type, encoder] of values ) {
+        for ( const [ index, type, encoder ] of values ) {
             for ( const row of this.rows ) {
                 row[index] = encoder.getEncoded( type( row[index] ) );
             }
         }
         return this.rows;
     }
+
     /**
      * @param {String} key
      * @param {*} cell
@@ -688,6 +743,7 @@ export class Dataset {
             return cell;
         }
     }
+
     /**
      * @param {String} key
      * @param {Array} cells
@@ -700,6 +756,7 @@ export class Dataset {
             return cells;
         }
     }
+
     /**
      * @param {String} key
      * @returns {Array[]}
@@ -711,6 +768,7 @@ export class Dataset {
         }
         return this.rows;
     }
+
     /**
      * @param {String[]} keys
      * @returns {Array[]}
@@ -720,16 +778,17 @@ export class Dataset {
         for ( const key of keys ) {
             const { index, encoder } = this.header.getColumnByKey( key );
             if ( encoder ) {
-                values.push( [index, encoder] );
+                values.push( [ index, encoder ] );
             }
         }
-        for ( const [index, encoder] of values ) {
+        for ( const [ index, encoder ] of values ) {
             for ( const row of this.rows ) {
                 row[index] = encoder.getDecoded( row[index] );
             }
         }
         return this.rows;
     }
+
     /**
      * @param {String} key
      * @param {*} cells
@@ -742,6 +801,7 @@ export class Dataset {
             return cell;
         }
     }
+
     /**
      * @param {String} key
      * @param {Array} cells
@@ -754,16 +814,17 @@ export class Dataset {
             return cells;
         }
     }
+
     /**
      * @typedef {Object} DatasetColumnStatistics
      * @property {Number} *
-     * 
+     *
      * @param {*} object
-     * @param {String|String[]} keys 
+     * @param {String|String[]} keys
      * @returns {DatasetColumnStatistics}
      */
     count( object, keys ) {
-        const _keys = Array.isArray( keys ) ? keys : [keys];
+        const _keys = Array.isArray( keys ) ? keys : [ keys ];
         const indexes = {};
         const results = {};
         _keys.forEach( key => indexes[key] = this.header.getColumnIndexByColumnKey( key ) );
@@ -778,13 +839,14 @@ export class Dataset {
         results[Symbol( 'target' )] = object;
         return results;
     }
+
     /**
      * @param {*} object
-     * @param {String|String[]} keys 
+     * @param {String|String[]} keys
      * @returns {Promise<DatasetColumnStatistics>}
      */
     async countAsync( object, keys ) {
-        const _keys = Array.isArray( keys ) ? keys : [keys];
+        const _keys = Array.isArray( keys ) ? keys : [ keys ];
         const indexes = {};
         const results = {};
         _keys.forEach( key => indexes[key] = this.header.getColumnIndexByColumnKey( key ) );
@@ -802,6 +864,7 @@ export class Dataset {
             } );
         } );
     }
+
     /**
      * @param {String[]} keys
      * @returns {Map}
@@ -809,6 +872,7 @@ export class Dataset {
     groupBy( keys ) {
         return Dataset._groupBy( this.rows, keys.some( k => typeof k === 'string' ) ? keys.map( key => this.header.getColumnIndexByColumnKey( key ) ) : keys );
     }
+
     /**
      * @param {Array<Array<String|Number,Function|String|undefined>>} keys
      * @param {Boolean} [inplace]
@@ -822,40 +886,40 @@ export class Dataset {
         function sortParse( type ) {
             if ( typeof type === 'function' ) {
                 return type;
-            } else {
-                switch ( `${type}`.toLowerCase() ) {
-                    case 'd':
-                    case 'desc':
-                    case 'descending':
-                    case 'za':
-                    case 'z-a': {
-                        return ( a, b ) => b - a;
-                    }
-                    default: {
-                        return ( a, b ) => a - b;
-                    }
+            }
+            switch ( `${ type }`.toLowerCase() ) {
+                case 'd':
+                case 'desc':
+                case 'descending':
+                case 'za':
+                case 'z-a': {
+                    return ( a, b ) => b - a;
+                }
+                default: {
+                    return ( a, b ) => a - b;
                 }
             }
+
         }
         let indexes;
         let sortFunctionMap;
 
         if ( typeof keys === 'string' ) {
-            keys = [keys];
+            keys = [ keys ];
         }
 
         if ( keys.some( k => typeof k === 'string' ) ) {
             keys = keys.map( k => typeof k === 'string' ? [this.header.getColumnIndexByColumnKey( k )] : [k] );
         }
 
-        [indexes, sortFunctionMap] = ( keys.some( ( [k] ) => typeof k === 'string' )
-            ? keys.map( ( [k, s] ) => [this.header.getColumnIndexByColumnKey( k ), sortParse( s )] )
-            : keys.map( ( [i, s] ) => [i, sortParse( s )] ) )
+        [ indexes, sortFunctionMap ] = ( keys.some( ( [ k ] ) => typeof k === 'string' ) ?
+            keys.map( ( [ k, s ] ) => [ this.header.getColumnIndexByColumnKey( k ), sortParse( s ) ] ) :
+            keys.map( ( [ i, s ] ) => [ i, sortParse( s ) ] ) )
             .reduce( ( p, c, i ) => {
                 p[0][i] = c[0];
                 p[1].set( c[0], c[1] );
                 return p;
-            }, [[], new Map()] );
+            }, [ [], new Map() ] );
 
         if ( keys.length > 1 ) {
             const groupped = Dataset._groupBy( this.rows, indexes );
@@ -865,21 +929,22 @@ export class Dataset {
                 return this.rows;
             }
             return flatted;
-        } else {
-            const [index] = indexes;
-            if ( sortFunctionMap.has( index ) ) {
-                let sortFunc;
-                if ( sortFunc = sortFunctionMap.get( index ) ) {
-                    if ( inplace ) {
-                        return this.rows.sort( ( a, b ) => sortFunc( a[index], b[index] ) );
-                    } else {
-                        return [...this.rows].sort( ( a, b ) => sortFunc( a[index], b[index] ) );
-                    }
+        }
+        const [ index ] = indexes;
+        if ( sortFunctionMap.has( index ) ) {
+            let sortFunc;
+            if ( sortFunc = sortFunctionMap.get( index ) ) {
+                if ( inplace ) {
+                    return this.rows.sort( ( a, b ) => sortFunc( a[index], b[index] ) );
                 }
+                return [ ...this.rows ].sort( ( a, b ) => sortFunc( a[index], b[index] ) );
+
             }
         }
+
         return this.rows;
     }
+
     /**
      * @param {Array<Array<String|Number,Function>>} keyFilters
      * @param {Array<Array<String|Number,Function>>} [groupByFilters]
@@ -896,16 +961,16 @@ export class Dataset {
         let filterFunctionMap;
         let groupByFilterFunctionMap;
 
-        [indexes, filterFunctionMap] = ( keyFilters.some( ( [k] ) => typeof k === 'string' )
-            ? keyFilters.map( ( [k, s] ) => [this.header.getColumnIndexByColumnKey( k ), s] )
-            : keyFilters.map( ( [i, s] ) => [i, s] ) )
-            .reduce( ( p, [k, f], i ) => ( p[0][i] = k, p[1].set( k, f ), p ), [[], new Map()] );
+        [ indexes, filterFunctionMap ] = ( keyFilters.some( ( [ k ] ) => typeof k === 'string' ) ?
+            keyFilters.map( ( [ k, s ] ) => [ this.header.getColumnIndexByColumnKey( k ), s ] ) :
+            keyFilters.map( ( [ i, s ] ) => [ i, s ] ) )
+            .reduce( ( p, [ k, f ], i ) => ( p[0][i] = k, p[1].set( k, f ), p ), [ [], new Map() ] );
 
         if ( groupByFilters ) {
-            groupByFilterFunctionMap = ( groupByFilters.some( ( [k] ) => typeof k === 'string' )
-                ? groupByFilters.map( ( [k, s] ) => [this.header.getColumnIndexByColumnKey( k ), s] )
-                : groupByFilters.map( ( [i, s] ) => [i, s] ) )
-                .reduce( ( p, [k, f] ) => p.set( k, f ), new Map() );
+            groupByFilterFunctionMap = ( groupByFilters.some( ( [ k ] ) => typeof k === 'string' ) ?
+                groupByFilters.map( ( [ k, s ] ) => [ this.header.getColumnIndexByColumnKey( k ), s ] ) :
+                groupByFilters.map( ( [ i, s ] ) => [ i, s ] ) )
+                .reduce( ( p, [ k, f ] ) => p.set( k, f ), new Map() );
         }
 
         if ( keyFilters.length > 1 ) {
@@ -916,22 +981,23 @@ export class Dataset {
                 return this.rows;
             }
             return flatted;
-        } else {
-            const [index] = indexes;
-            if ( filterFunctionMap.has( index ) ) {
-                const filterFunc = filterFunctionMap.get( index );
-                if ( filterFunc ) {
-                    const filtered = this.rows.filter( filterFunc );
-                    if ( inplace ) {
-                        this.rows = filtered;
-                        return this.rows;
-                    }
-                    return filtered;
-                }
-            }
-            return this.rows;
         }
+        const [ index ] = indexes;
+        if ( filterFunctionMap.has( index ) ) {
+            const filterFunc = filterFunctionMap.get( index );
+            if ( filterFunc ) {
+                const filtered = this.rows.filter( filterFunc );
+                if ( inplace ) {
+                    this.rows = filtered;
+                    return this.rows;
+                }
+                return filtered;
+            }
+        }
+        return this.rows;
+
     }
+
     /**
      * @callback callback
      * @param {Array} element
@@ -949,6 +1015,7 @@ export class Dataset {
             callback( this.rows[i], i, thisArg );
         }
     }
+
     /**
      * @callback callback
      * @param {Array} element
@@ -966,6 +1033,7 @@ export class Dataset {
             callback( this.rows[i], i, thisArg );
         }
     }
+
     /**
      * @callback callback
      * @param {Array} element
@@ -985,14 +1053,15 @@ export class Dataset {
             }
             return this.rows;
         }
-        else {
-            const rows = [];
-            for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
-                rows[i] = callback( this.rows[i], i, thisArg );
-            }
-            return rows;
+
+        const rows = [];
+        for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
+            rows[i] = callback( this.rows[i], i, thisArg );
         }
+        return rows;
+
     }
+
     /**
      * @callback callback
      * @param {Array} element
@@ -1000,7 +1069,7 @@ export class Dataset {
      * @param {Array[]} array
      */
     /**
-     * @param {callback} callback 
+     * @param {callback} callback
      * @param {{inplace:Boolean,thisArg:Array[]}} [options]
      * @returns {Array}
      */
@@ -1012,14 +1081,15 @@ export class Dataset {
             }
             return this.rows;
         }
-        else {
-            const rows = [];
-            for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
-                rows[i] = callback( this.rows[i], i, thisArg );
-            }
-            return rows;
+
+        const rows = [];
+        for ( let i = 0, l = this.rows.length; i < l; i += 1 ) {
+            rows[i] = callback( this.rows[i], i, thisArg );
         }
+        return rows;
+
     }
+
 }
 
 export default { Dataset, DatasetEncoder, DatasetHeader };

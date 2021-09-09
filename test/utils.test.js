@@ -1,53 +1,53 @@
-import Utils from './utils.js';
+import Utils from '../src/utils.js';
 
 const { assert } = chai;
 
-describe( 'Utils', function () {
+describe( 'Utils', () => {
 
-    describe( '#getGlobal()', function () {
-        it( 'should be strictly equal to window', function () {
+    describe( '#getGlobal()', () => {
+        it( 'should be strictly equal to window', () => {
             assert.strictEqual( Utils.getGlobal(), window );
         } );
     } );
 
-    describe( '#isBrowser()', function () {
-        it( 'should be true', function () {
+    describe( '#isBrowser()', () => {
+        it( 'should be true', () => {
             assert.isOk( Utils.isBrowser() );
         } );
     } );
 
-    describe( '#isNode()', function () {
-        it( 'should be false', function () {
+    describe( '#isNode()', () => {
+        it( 'should be false', () => {
             assert.isNotOk( Utils.isNode() );
         } );
     } );
 
-    describe( '#isWorker()', function () {
-        it( 'should be false', function () {
+    describe( '#isWorker()', () => {
+        it( 'should be false', () => {
             assert.isNotOk( Utils.isWorker() );
         } );
     } );
 
-    describe( '#newUID( 0 )', function () {
+    describe( '#newUID( 0 )', () => {
         const variable = Utils.newUID( 0 );
-        it( 'should be an empty string', function () {
+        it( 'should be an empty string', () => {
             assert.strictEqual( variable.length, 0 );
         } );
     } );
-    describe( '#newUID( 16 )', function () {
+    describe( '#newUID( 16 )', () => {
         const variable = Utils.newUID( 16 );
-        it( 'should be a 16-sized string', function () {
+        it( 'should be a 16-sized string', () => {
             assert.strictEqual( variable.length, 16 );
         } );
 
         const bigNumbersLaw = Array( 1000 ).fill( null );
-        
+
         for ( let i = 0, { length } = bigNumbersLaw; i < length; i += 1 ) {
             bigNumbersLaw[i] = Utils.newUID( 16 );
         }
-            
-        it( 'should be randomized', function () {
-            assert.isOk( ( function () {
+
+        it( 'should be randomized', () => {
+            assert.isOk( ( function testRandomization() {
                 for ( let i = 0, { length } = bigNumbersLaw; i < length; i += 1 ) {
                     for ( let j = i + 1; j < length; j += 1 ) {
                         if ( bigNumbersLaw[i] === bigNumbersLaw[j] ) {
@@ -60,66 +60,66 @@ describe( 'Utils', function () {
         } );
     } );
 
-    describe( '#ObjectForEach( { foo:\'bar\', toto:\'titi\' } )', function () {
+    describe( '#objectForEach( { foo:\'bar\', toto:\'titi\' } )', () => {
 
         const test = { foo: 'bar', toto: 'titi' };
-        const targetKeys = ['foo', 'toto'];
-        const targetValues = ['bar', 'titi'];
+        const targetKeys = [ 'foo', 'toto' ];
+        const targetValues = [ 'bar', 'titi' ];
         const testedKeys = [];
         const testedValues = [];
         let indexSum = 0;
-        Utils.ObjectForEach( test, (key,values,index) => {
+        Utils.objectForEach( test, ( key, values, index ) => {
             testedKeys.push( key );
             testedValues.push( values );
             indexSum += index;
         } );
-        
-        
-        it( 'should iter over every keys', function () {
+
+
+        it( 'should iter over every keys', () => {
             assert.deepEqual( targetKeys, testedKeys );
-            assert.strictEqual( 1, indexSum )
+            assert.strictEqual( 1, indexSum );
         } );
 
-        it( 'should access every values', function () {
+        it( 'should access every values', () => {
             assert.deepEqual( targetValues, testedValues );
-            assert.strictEqual( 1, indexSum )
+            assert.strictEqual( 1, indexSum );
         } );
-    });
+    } );
 
-    describe( '#ObjectForEach( { foo:\'bar\', toto:\'titi\' } )', function () {
+    describe( '#objectForEach( { foo:\'bar\', toto:\'titi\' } )', () => {
 
         const test = { foo: 'bar', toto: 'titi' };
         const targetResult = { foo: '0bar', toto: '1titi' };
-        const targetKeys = ['foo', 'toto'];
-        const targetValues = ['bar', 'titi'];
+        const targetKeys = [ 'foo', 'toto' ];
+        const targetValues = [ 'bar', 'titi' ];
         const testedKeys = [];
         const testedValues = [];
         let indexSum = 0;
-        const target = Utils.ObjectMap( test, (key,value,index) => {
+        const target = Utils.objectMap( test, ( key, value, index ) => {
             testedKeys.push( key );
             testedValues.push( value );
             indexSum += index;
-            return `${index}${value}`
+            return `${ index }${ value }`;
         } );
-        
-        
-        it( 'should iter over every keys', function () {
+
+
+        it( 'should iter over every keys', () => {
             assert.deepEqual( targetKeys, testedKeys );
-            assert.strictEqual( 1, indexSum )
+            assert.strictEqual( 1, indexSum );
         } );
 
-        it( 'should access every values', function () {
+        it( 'should access every values', () => {
             assert.deepEqual( targetValues, testedValues );
-            assert.strictEqual( 1, indexSum )
+            assert.strictEqual( 1, indexSum );
         } );
 
-        it( 'should be a new object', function () {
+        it( 'should be a new object', () => {
             assert.notStrictEqual( test, target );
         } );
 
-        it( 'should have been modified as wanted', function () {
+        it( 'should have been modified as wanted', () => {
             assert.deepStrictEqual( target, targetResult );
         } );
 
-    });
+    } );
 } );
