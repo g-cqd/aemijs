@@ -1,10 +1,10 @@
 /* eslint-env module */
 
 /**
- * @param  {...Function} funcs 
+ * @param  {...Function} funcs
  * @returns {Function}
  */
-export function pipe ( ...funcs ) {
+export function pipe( ...funcs ) {
     if ( funcs.length > 0 ) {
         return funcs.reduce( ( acc, curr ) => arg => curr( acc( arg ) ) );
     }
@@ -12,7 +12,7 @@ export function pipe ( ...funcs ) {
 }
 
 /**
- * @param  {...Function} funcs 
+ * @param  {...Function} funcs
  * @returns {Function}
  */
 export function compose( ...funcs ) {
@@ -25,18 +25,18 @@ export function compose( ...funcs ) {
 export class IArray {
 
     static toImmutable( thisArg ) {
-        if ( !( IArray.isIArray( thisArg ) ) ) {
+        if ( !IArray.isIArray( thisArg ) ) {
             if (
-                Array.isArray( thisArg )
-                || Symbol.iterator in thisArg &&
+                Array.isArray( thisArg ) ||
+                Symbol.iterator in thisArg &&
                 typeof thisArg.length !== 'undefined' &&
                 typeof thisArg[0] !== 'undefined'
             ) {
                 return Object.freeze( Object.setPrototypeOf( thisArg, IArray.prototype ) );
             }
-            else {
-                throw new TypeError( 'Please use IArray.from' );
-            }
+
+            throw new TypeError( 'Please use IArray.from' );
+
         }
         else {
             return Object.freeze( thisArg );
@@ -75,9 +75,9 @@ export class IArray {
     }
 
     static isIArray( instance ) {
-        return Object.getPrototypeOf( instance ) === IArray.prototype
-            && 'length' in instance
-            && ( !Object.isExtensible( instance ) || Object.isFrozen( instance ) );
+        return Object.getPrototypeOf( instance ) === IArray.prototype &&
+            'length' in instance &&
+            ( !Object.isExtensible( instance ) || Object.isFrozen( instance ) );
     }
 
     static [Symbol.hasInstance]( instance ) {
@@ -96,9 +96,9 @@ export class IArray {
         return Object.isFrozen( instance );
     }
 
-    constructor ( ...args ) {
+    constructor( ...args ) {
         const { length } = args;
-        if ( length === 1 && typeof args[0] === 'number') {
+        if ( length === 1 && typeof args[0] === 'number' ) {
             this.length = args[0];
         }
         else {
@@ -113,12 +113,12 @@ export class IArray {
     [Symbol.iterator]() {
         const { length } = this;
         let i = 0;
-        return ( {
+        return {
             next: () => ( {
                 value: i < length ? this[i] : undefined,
                 done: i++ >= length
             } )
-        } );
+        };
     }
 
     toString() {
@@ -126,13 +126,13 @@ export class IArray {
         if ( length === 0 ) {
             return '';
         }
-        else {
-            let outputString = `${this[0]}`;
-            for ( let i = 1; i < length; i += 1 ) {
-                outputString += `,${this[i]}`;
-            }
-            return outputString;
+
+        let outputString = `${ this[0] }`;
+        for ( let i = 1; i < length; i += 1 ) {
+            outputString += `,${ this[i] }`;
         }
+        return outputString;
+
     }
 
     /**
@@ -161,7 +161,7 @@ export class IArray {
     }
 
     /**
-     * @param {any} value 
+     * @param {any} value
      * @returns {IArray}
      */
     fill( value, start, end ) {
@@ -180,7 +180,7 @@ export class IArray {
     }
 
     /**
-     * @param {Function} value 
+     * @param {Function} value
      * @returns {IArray}
      */
     populate( callback ) {
@@ -196,7 +196,7 @@ export class IArray {
     }
 
     /**
-     * @param {Number} i 
+     * @param {Number} i
      * @returns {any}
      */
     at( i ) {
@@ -207,48 +207,48 @@ export class IArray {
      * @returns {Iterable<any>}
      */
     values() {
-        return ( { [Symbol.iterator]: this[Symbol.iterator] } );
+        return { [Symbol.iterator]: this[Symbol.iterator] };
     }
 
     /**
      * @returns {Iterable<Number,any>}
      */
     entries() {
-        return ( {
+        return {
             [Symbol.iterator]: () => {
                 const { length } = this;
                 let i = 0;
-                return ( {
+                return {
                     next: () => ( {
                         value: i < length ? new IArray( i, this[i] ) : undefined,
                         done: !( i++ < length )
                     } )
-                } );
+                };
             }
-        } );
+        };
     }
 
     /**
      * @returns {Iterable<Number>}
      */
     keys() {
-        return ( {
+        return {
             [Symbol.iterator]: () => {
                 const { length } = this;
                 let i = 0;
-                return ( {
+                return {
                     next: () => ( {
                         value: i < length ? i : undefined,
                         done: !( i++ < length )
                     } )
-                } );
+                };
             }
-        } );
+        };
     }
 
     /**
-     * @param {Function} callback 
-     * @param {IArray} thisArg 
+     * @param {Function} callback
+     * @param {IArray} thisArg
      */
     forEach( callback, thisArg ) {
         thisArg = thisArg || this;
@@ -275,7 +275,12 @@ export class IArray {
         return -1;
     }
 
-    lastIndexOf( searchElement, fromIndex ) {
+    /**
+     * @param {any} searchElement
+     * @param {Number} fromIndex
+     * @returns {Number}
+     */
+    lastIndexOf(searchElement, fromIndex) {
         for ( let { length } = this, i = fromIndex >= 0 && fromIndex < length ? fromIndex : length; i > 0; i -= 1 ) {
             if ( Object.is( this[i], searchElement ) ) {
                 return i;
@@ -311,7 +316,7 @@ export class IArray {
         const { length } = thisArg;
         const Mutable = [];
         for ( let i = 0; i < length; i += 1 ) {
-            if ( !!callback( thisArg[i], i, thisArg ) ) {
+            if ( callback( thisArg[i], i, thisArg ) ) {
                 Mutable.push( thisArg[i] );
             }
         }
@@ -332,7 +337,7 @@ export class IArray {
         thisArg = thisArg || this;
         const { length } = thisArg;
         for ( let i = 0; i < length; i += 1 ) {
-            if ( !!callback( thisArg[i], i, thisArg ) ) {
+            if ( callback( thisArg[i], i, thisArg ) ) {
                 return true;
             }
         }
@@ -343,7 +348,7 @@ export class IArray {
         thisArg = thisArg || this;
         const { length } = thisArg;
         for ( let i = 0; i < length; i += 1 ) {
-            if ( !!callback( thisArg[i], i, thisArg ) ) {
+            if ( callback( thisArg[i], i, thisArg ) ) {
                 return thisArg[i];
             }
         }
@@ -485,7 +490,7 @@ export class IArray {
         const _start = typeof start === 'undefined' ? 0 : start < 0 ? length + start : start > length ? length : start;
         const _end = typeof end === 'undefined' ? length : end < 0 ? length + end : end > length ? length : end;
         let _index = 0;
-        let [toCopy, startCopy] = _start < _end ? [_end - _start, _start] : [_start - _end, _end];
+        let [ toCopy, startCopy ] = _start < _end ? [ _end - _start, _start ] : [ _start - _end, _end ];
         for ( let i = 0; i < length; i += 1 ) {
             if ( i >= target && toCopy-- > 0 ) {
                 Mutable[_index] = this[startCopy++];
@@ -502,7 +507,7 @@ export class IArray {
         const { length } = this;
         let string = '';
         for ( let i = 0; i < length; i += 1 ) {
-            string = `${string}${separator}${this[i]}`;
+            string = `${ string }${ separator }${ this[i] }`;
         }
         return string;
     }
@@ -510,7 +515,9 @@ export class IArray {
     sort( callback ) {
         callback = callback || ( ( a, b ) => a < b ? -1 : a > b ? 1 : 0 );
         const { length } = this;
-        if ( length <= 1 ) { return IArray.from( this ); }
+        if ( length <= 1 ) {
+            return IArray.from( this );
+        }
         const middle = Math.floor( length / 2 );
         const left = this.slice( 0, middle );
         const right = this.slice( middle );
@@ -525,7 +532,8 @@ export class IArray {
             while ( leftIndex < ll && rightIndex < rl ) {
                 if ( callback( left[leftIndex], right[rightIndex] ) < 0 ) {
                     Mutable[globalIndex++] = left[leftIndex++];
-                } else {
+                }
+                else {
                     Mutable[globalIndex++] = right[rightIndex++];
                 }
             }
@@ -549,17 +557,18 @@ export class IArray {
             return this.flat( Infinity );
         }
         let array = this.flat( Infinity );
-        let { length: fLength } = array;
-        if ( length >= 1 && ( ( fLength % args.reduce( ( acc, curr ) => acc * curr ) !== 0 ) || ( fLength % args[0] !== 0 ) ) ) {
-            throw new RangeError( `An array of shape (${fLength}, 1)  can not be converted to an array of shape (${args.join( ',' )})` );   
+        const { length: fLength } = array;
+        if ( length >= 1 && ( fLength % args.reduce( ( acc, curr ) => acc * curr ) !== 0 || fLength % args[0] !== 0 ) ) {
+            throw new RangeError( `An array of shape (${ fLength }, 1)  can not be converted to an array of shape (${ args.join( ',' ) })` );
         }
         for ( let i = length - 1; i >= 0; i -= 1 ) {
             const dimension = args[i];
             const _length = array.length / dimension;
-            array = new IArray( _length ).populate( i => new IArray( dimension ).populate( j => array[i * dimension + j] ) )
+            array = new IArray( _length ).populate( i => new IArray( dimension ).populate( j => array[i * dimension + j] ) );
         }
         return array;
     }
+
     push( ...args ) {
         const { length } = this;
         const { length: _length } = args;
@@ -572,7 +581,7 @@ export class IArray {
             for ( let i = 0; i < _length; i += 1 ) {
                 Mutable[i + length] = args[i];
             }
-            return Object.freeze( Mutable );   
+            return Object.freeze( Mutable );
         }
         if ( IArray.isResizable( this ) ) {
             for ( let i = 0; i < _length; i += 1 ) {
@@ -583,6 +592,7 @@ export class IArray {
         }
         throw new Error( 'What the fuck are you doing ?' );
     }
+
     empty() {
         if ( IArray.isImmutable( this ) ) {
             throw new TypeError( 'As an immutable data structure, <empty> method can not be called on it.' );
@@ -594,6 +604,7 @@ export class IArray {
         }
         return this;
     }
-};
+
+}
 
 export default { pipe, compose, IArray };

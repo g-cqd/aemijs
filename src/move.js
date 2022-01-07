@@ -7,9 +7,9 @@ import { Easing } from './math.js';
  *
  * #browser-only
  *
- * @param {Event} event
- * @param {String} selector
- * @param {Number} duration
+ * @param {Event} event - The event object
+ * @param {String} selector - CSS selector of the element to scroll to
+ * @param {Number} duration - Duration of the animation in milliseconds
  */
 export function smoothScrollTo( event, selector, duration = 1000 ) {
     event.preventDefault();

@@ -23,9 +23,9 @@ export function hasClass( element, className ) {
  * @returns {DOMTokenList|Promise<DOMTokenList>} Classlist containing the added class
  */
 export function addClass( element, className, requireAnimationFrame ) {
-    requireAnimationFrame = requireAnimationFrame || false;
+    const _requireAnimationFrame = requireAnimationFrame || false;
     if ( element && element instanceof Element && !!className && typeof className === 'string' ) {
-        if ( requireAnimationFrame ) {
+        if ( _requireAnimationFrame ) {
             return new Promise( resolve => {
                 window.requestAnimationFrame( () => {
                     element.classList.add( className );
@@ -47,9 +47,9 @@ export function addClass( element, className, requireAnimationFrame ) {
  * @returns {DOMTokenList|Promise<DOMTokenList>} Classlist without the removed class
  */
 export function removeClass( element, className, requireAnimationFrame ) {
-    requireAnimationFrame = requireAnimationFrame || false;
+    const _requireAnimationFrame = requireAnimationFrame || false;
     if ( element && element instanceof Element && !!className && typeof className === 'string' ) {
-        if ( requireAnimationFrame ) {
+        if ( _requireAnimationFrame ) {
             return new Promise( resolve => {
                 window.requestAnimationFrame( () => {
                     element.classList.remove( className );
@@ -71,11 +71,11 @@ export function removeClass( element, className, requireAnimationFrame ) {
  * @returns {DOMTokenList|Promise<DOMTokenList>} Classlist containing or not the targeted class
  */
 export function toggleClass( element, className, requireAnimationFrame ) {
-    requireAnimationFrame = requireAnimationFrame || false;
+    const _requireAnimationFrame = requireAnimationFrame || false;
     if ( element && element instanceof Element && !!className && typeof className === 'string' ) {
         return hasClass( element, className ) ?
-            removeClass( element, className, requireAnimationFrame ) :
-            addClass( element, className, requireAnimationFrame );
+            removeClass( element, className, _requireAnimationFrame ) :
+            addClass( element, className, _requireAnimationFrame );
     }
     throw new Error( 'Element and/or ClassName arguments are not correct.' );
 }
@@ -142,18 +142,18 @@ export function data( element, dataset, value ) {
  */
 export function ecs( ...args ) {
     const { length } = args;
-    args = args.filter( item => !!item );
+    const _args = args.filter( item => !!item );
     if ( length === 0 ) {
         return document.createElement( 'div' );
     }
     if ( length !== 1 ) {
         const wrapper = document.createElement( 'div' );
         for ( let i = 0; i < length; i += 1 ) {
-            wrapper.appendChild( ecs( args[i] ) );
+            wrapper.appendChild( ecs( _args[i] ) );
         }
         return wrapper;
     }
-    let current = args[0];
+    let current = _args[0];
     if ( current instanceof Element ) {
         return current;
     }
@@ -196,7 +196,10 @@ export function ecs( ...args ) {
             if ( value instanceof Promise ) {
                 value.then( response => {
                     attr( current, key, response );
-                } );
+                } )
+                    .catch( error => {
+                        console.error( error );
+                    } );
             }
             else {
                 attr( current, key, value );
@@ -208,7 +211,10 @@ export function ecs( ...args ) {
             if ( value instanceof Promise ) {
                 value.then( response => {
                     current.dataset[key] = response;
-                } );
+                } )
+                    .catch( error => {
+                        console.error( error );
+                    } );
             }
             else {
                 current.dataset[key] = value;
@@ -225,7 +231,11 @@ export function ecs( ...args ) {
             if ( value instanceof Promise ) {
                 value.then( response => {
                     current.style[key] = response;
-                } );
+                } )
+
+                    .catch( error => {
+                        console.error( error );
+                    } );
             }
             current.style[key] = value;
         } );
@@ -263,7 +273,7 @@ export function ecs( ...args ) {
     }
     if ( $actions ) {
         objectForEach( $actions, ( key, values ) => {
-            const filteredKey = key.split( /\_\$/ );
+            const filteredKey = key.split( /_\$/u );
             if ( filteredKey.length > 1 ) {
                 current[filteredKey[0]]( ...values );
             }

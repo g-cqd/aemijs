@@ -12,7 +12,7 @@ export class MarkdownParser {
         this.worker = new ExtendedWorker(
             () => {
                 globalThis.onmessage = function onmessage( event ) {
-                    globalThis.postMessage( { id: event.data.id, data: { data: marked( event.data.data ) } } );
+                    globalThis.postMessage( { id: event.data.id, data: { data: marked.marked( event.data.data ) } } );
                 };
             },
             { promise: true, importScripts: MarkdownParserLibraryURL || 'https://cdn.jsdelivr.net/npm/marked/marked.min.js' }
@@ -62,21 +62,21 @@ export class VariableManager {
      * @returns {void}
      */
     register( key, object ) {
-        object = typeof object === 'object' ? object : {};
-        const { exec, parser } = object;
+        const _object = typeof object === 'object' ? object : {};
+        const { exec, parser } = _object;
         if ( key in this.map || !( exec || parser ) ) {
-            return;
+            throw new Error( 'Key already registered or invalid object' );
         }
         this.map[key] = { exec, parser };
     }
 
-    async execute() {
+    execute() {
         const { body } = document;
         const nodes = [ body ];
         const found = [];
         while ( nodes.length > 0 ) {
             const currentNode = nodes.shift();
-            const { length: l } = currentNode.childNodes.length;
+            const { length: l } = currentNode.childNodes;
             for ( let i = 0; i < l; i += 1 ) {
                 const currentChild = currentNode.childNodes[i];
                 if ( [ 1, 11 ].includes( currentChild.nodeType ) ) {
@@ -88,33 +88,82 @@ export class VariableManager {
                     }
                 }
             }
+            const { length: l2 } = currentNode.attributes;
+            for ( let i = 0; i < l2; i += 1 ) {
+                const currentAttribute = currentNode.attributes[i];
+                if ( ( /\{\{(?:.|\n|\r)*\}\}/gu ).test( currentAttribute.value ) ) {
+                    found.push( currentAttribute );
+                }
+            }
         }
 
         for ( const fo of found ) {
-            let html = fo.innerHTML;
-            objectForEach( this.map, ( key, value ) => {
-                const reg = new RegExp( `{{${ key }:?(?:.|\n|\r)*?}}`, 'gu' );
-                const res = reg.exec( html );
-                if ( res && res.length > 0 ) {
-                    const fres = res.filter( e => e );
-                    const { parser, exec } = value;
-                    for ( const re of fres ) {
-                        fo.innerHTML = '';
-                        html = html.split( re );
-                        for ( let i = 0; i < html.length; i++ ) {
-                            const d = document.createTextNode( html[i] );
-                            fo.appendChild( d );
-                            if ( i < html.length - 1 ) {
+            if ( fo.nodeType === 2 ) {
+                const attr = fo.nodeValue;
+                objectForEach( this.map, async ( key, value ) => {
+                    const reg = new RegExp( `\\{\\{${ key }:?(?:.|\\n|\\r)*?\\}\\}`, 'gu' );
+                    const res = reg.exec( attr );
+                    if ( res && res.length === 1 ) {
+                        const [ fres ] = res.filter( e => e );
+                        const { parser, exec } = value;
+                        const e = exec( VariableManager.parse( key, parser, fres ) );
+                        if ( e instanceof Promise ) {
+                            fo.nodeValue = await e;
+                        }
+                        else {
+                            fo.nodeValue = e;
+                        }
+                    }
+                } );
+            }
+            else {
+                objectForEach( this.map, async ( key, value ) => {
+                    let html = fo.innerHTML;
+                    fo.innerHTML = '';
+                    const reg = new RegExp( `\\{\\{${ key }:?(?:.|\\n|\\r)*?\\}\\}`, 'gu' );
+                    const res = html.match( reg );
+                    if ( res && res.length > 0 ) {
+                        const { parser, exec } = value;
+                        for ( const re of res ) {
+                            let rex = html.indexOf( re );
+                            while ( (rex = html.indexOf( re )) > -1 ) {
+                                const leftHTML = html.substring( 0, rex );
+                                const rightHTML = html.substring( rex + re.length );
                                 const e = exec( VariableManager.parse( key, parser, re ) );
-                                if ( !fo.appendChild( e ) ) {
-                                    fo.insertAdjacentElement( 'afterend', e );
+                                if ( e instanceof Promise ) {
+                                    const ee = await e;
+                                    if ( ee instanceof Element ) {
+                                        html = leftHTML + ee.outerHTML + rightHTML;
+                                    }
+                                    else if ( ee instanceof Node ) {
+                                        html = leftHTML + ee.textContent + rightHTML;
+                                    }
+                                    else {
+                                        html = leftHTML + ee + rightHTML;
+                                    }
+                                }
+                                else {
+                                    if ( e instanceof Element ) {
+                                        html = leftHTML + e.outerHTML + rightHTML;
+                                    }
+                                    else if ( e instanceof Node ) {
+                                        html = leftHTML + e.textContent + rightHTML;
+                                    }
+                                    else {
+                                        html = leftHTML + e + rightHTML;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            } );
+                    fo.innerHTML = html;
+                } );
+            }
         }
+    }
+
+    async asyncExecute() {
+        this.execute();
     }
 
     /**
@@ -159,6 +208,9 @@ export class VariableManager {
                     }
                 }
             }
+            else {
+                prev[prop] = value;
+            }
             return prev;
         }, {} );
     }
@@ -169,6 +221,14 @@ export class VariableManager {
             throw new Error( 'VariableManager was not instantiated.' );
         }
         return gl.VariableManager.execute();
+    }
+
+    static asyncExecute() {
+        const gl = getGlobal();
+        if ( !( 'VariableManager' in gl ) ) {
+            throw new Error( 'VariableManager was not instantiated.' );
+        }
+        return gl.VariableManager.asyncExecute();
     }
 
 }

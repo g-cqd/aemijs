@@ -1,20 +1,23 @@
 /* eslint-env module */
 
 import { ExtendedWorker } from './multithread.js';
-import { getGlobal } from './utils.js';
 import { WebPTest } from './navigator.js';
+import { getGlobal } from './utils.js';
 
 export class Wait {
 
-    constructor() { }
-
     /**
-     * @returns {{
-     *   interactive: Function[],
-     *   complete: Function[],
-     *   DOMContentLoaded: Function[],
-     *   load: Function[]
-     * }}
+     * @typedef {Object} WaitRegister
+     * @property {Array<Function>} DOMContentLoaded
+     * @property {Array<Function>} interactive
+     * @property {Array<Function>} complete
+     * @property {Array<Function>} load
+     */
+    /**
+     * @typedef {'DOMContentLoaded'|'interactive'|'complete'|'load'} WaitRegisterType
+     */
+    /**
+     * @returns {WaitRegister}
      */
     static register() {
         const gl = getGlobal();
@@ -33,13 +36,16 @@ export class Wait {
     }
 
     /**
+     * @typedef {Object} WaitRegisterOptions
+     * @property {Function} resolve
+     * @property {Function} reject
+     * @property {Function} func
+     * @property {any[]} args
+     */
+
+    /**
      * @param {string} type - Register an action to be fired when type is dispatched
-     * @param {{
-     *   resolve?:Function,
-     *   reject?:Function,
-     *   func?:Function,
-     *   args?:any[]
-     * }} options - Functions and args to call when action will be fired
+     * @param {WaitRegisterOptions} options - Functions and args to call when action will be fired
      */
     static set( type, options ) {
         const { resolve, reject, func, args } = options;
@@ -73,6 +79,9 @@ export class Wait {
                 }
                 break;
             }
+            default: {
+                break;
+            }
         }
         if ( exec === false ) {
             registry[type].push( () => new Promise( ( resolve_, reject_ ) => {
@@ -87,16 +96,16 @@ export class Wait {
     }
 
     /**
-     * @param {"interactive" | "complete" | "DOMContentLoaded" | "load"} type - EventType or Key to wait to be dispatched or already registered
-     * @returns {Promise<any[]>}
+     * @param {WaitRegisterType} type - EventType or Key to wait to be dispatched or already registered
+     * @returns {Promise<any[]>} Wrap every function of a type in a Promise.all and return the result
      */
     static all( type ) {
         return Promise.all( Wait.register()[type].map( f => f() ) );
     }
 
     /**
-     * @param {Number} time
-     * @returns {Promise<Number>} Await it to do whatever you want to do
+     * @param {Number} time - Time to wait before resolving
+     * @returns {Promise<Number>} Resolve after time
      */
     static time( time ) {
         return new Promise( resolve => setTimeout( resolve, time ) );
@@ -115,9 +124,9 @@ export class Wait {
 
     /**
      *
-     * @param {Function} func
-     * @param  {...any} funcArgs
-     * @returns {Promise}
+     * @param {Function} func - Function to wrap in a Promise
+     * @param  {...any} funcArgs - Arguments to pass to function
+     * @returns {Promise} Asynchronous wrapped function
      */
     static async( func, ...funcArgs ) {
         return new Promise( ( resolve, reject ) => {
@@ -132,10 +141,10 @@ export class Wait {
 
     /**
      *
-     * @param {Function} func
-     * @param {Number} timeout
-     * @param  {...any} funcArgs
-     * @returns {Promise}
+     * @param {Function} func - Function to wrap in an asynchronous timeout
+     * @param {Number} timeout - Timeout to wait before calling func
+     * @param  {...any} funcArgs - Arguments to pass to func
+     * @returns {Promise} Asynchronous wrapped function
      */
     static promiseDelay( func, timeout, ...funcArgs ) {
         return new Promise( ( resolve, reject ) => setTimeout( ( ...args ) => {
@@ -150,9 +159,9 @@ export class Wait {
 
     /**
      *
-     * @param {Function} func
-     * @param  {...any} funcArgs
-     * @returns {Promise}
+     * @param {Function} func - Function to trigger when interactive event is fired
+     * @param  {...any} funcArgs - Arguments to pass to function
+     * @returns {Promise} Asynchronous wrapped function
      */
     static interactive( func, ...funcArgs ) {
         return new Promise( ( resolve, reject ) => {
@@ -162,9 +171,9 @@ export class Wait {
 
     /**
      *
-     * @param {Function} func
-     * @param  {...any} funcArgs
-     * @returns {Promise}
+     * @param {Function} func - Function to trigger when readyState changes to complete
+     * @param  {...any} funcArgs - Arguments to pass to function
+     * @returns {Promise} Asynchronous wrapped function
      */
     static complete( func, ...funcArgs ) {
         return new Promise( ( resolve, reject ) => {
@@ -174,9 +183,9 @@ export class Wait {
 
     /**
      *
-     * @param {Function} func
-     * @param  {...any} funcArgs
-     * @returns {Promise}
+     * @param {Function} func - Function to trigger when DOMContentLoaded event is fired
+     * @param  {...any} funcArgs - Arguments to pass to function
+     * @returns {Promise} Asynchronous wrapped function
      */
     static DOMContentLoaded( func, ...funcArgs ) {
         return new Promise( ( resolve, reject ) => {
@@ -186,9 +195,9 @@ export class Wait {
 
     /**
      *
-     * @param {Function} func
-     * @param  {...any} funcArgs
-     * @returns {Promise}
+     * @param {Function} func - Function to trigger when readyState changes to complete
+     * @param  {...any} funcArgs - Arguments to pass to function
+     * @returns {Promise} Asynchronous wrapped function
      */
     static ready( func, ...funcArgs ) {
         return new Promise( ( resolve, reject ) => {
@@ -198,9 +207,9 @@ export class Wait {
 
     /**
      *
-     * @param {Function} func
-     * @param  {...any} funcArgs
-     * @returns {Promise}
+     * @param {Function} func - Function to trigger when window.load event is fired
+     * @param  {...any} funcArgs - Arguments to pass to function
+     * @returns {Promise} Asynchronous wrapped function
      */
     static load( func, ...funcArgs ) {
         return new Promise( ( resolve, reject ) => {
@@ -215,7 +224,7 @@ export class ImageLoader {
     constructor() {
         this.worker = new ExtendedWorker(
             () => {
-                self.onmessage = function ( event ) {
+                self.onmessage = function onmessage( event ) {
                     url( event.data.data.url, event.data.id ).then(
                         ( [ id, result ] ) => {
                             self.postMessage( {

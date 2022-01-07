@@ -86,20 +86,21 @@ describe( 'Utils', () => {
         } );
     } );
 
-    describe( '#objectForEach( { foo:\'bar\', toto:\'titi\' } )', () => {
+    describe( '#objectMap( { foo:\'bar\', toto:\'titi\' }, (key,value) =>  \'\' + key + value )', () => {
 
         const test = { foo: 'bar', toto: 'titi' };
-        const targetResult = { foo: '0bar', toto: '1titi' };
+        const targetResult = { foo: 'foobar', toto: 'tototiti' };
         const targetKeys = [ 'foo', 'toto' ];
-        const targetValues = [ 'bar', 'titi' ];
+        const targetValues = [ 'foobar', 'tototiti' ];
         const testedKeys = [];
         const testedValues = [];
         let indexSum = 0;
         const target = Utils.objectMap( test, ( key, value, index ) => {
+            const targetValue = `${ key }${ value }`;
             testedKeys.push( key );
-            testedValues.push( value );
+            testedValues.push( targetValue );
             indexSum += index;
-            return `${ index }${ value }`;
+            return targetValue;
         } );
 
 

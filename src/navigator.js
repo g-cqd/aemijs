@@ -12,8 +12,8 @@ export const Cookies = {
         return newDate.toGMTString();
     },
     /**
-     * @param {String} cookieName
-     * @returns {String}
+     * @param {String} cookieName - Name of the cookie
+     * @returns {String} Cookie Value
      */
     get( cookieName ) {
         return new Map(
@@ -23,8 +23,8 @@ export const Cookies = {
         ).get( cookieName );
     },
     /**
-     * @param {String} cookieName
-     * @returns {Boolean}
+     * @param {String} cookieName - Name of the cookie
+     * @returns {Boolean} - True if cookie exists
      */
     has( cookieName ) {
         return new Map(
@@ -34,17 +34,20 @@ export const Cookies = {
         ).has( cookieName );
     },
     /**
-     * @param {String} cookieName
-     * @param {String|Number|Boolean} cookieValue
-     * @param {{
-     *    expiration?: Number,
-     *    sameSite?: 'Strict' | 'Lax' | 'None',
-     *    path?: String
-     * }} [options]
+     * @typedef {Object} CookieOptions - Options for the cookie
+     * @property {Number} expiration - Number of days until expiration
+     * @property {'Strict'|'Lax'|'None'} sameSite - Cookie SameSite policy
+     * @property {String} path - Cookie path
+     */
+    /**
+     * @param {String} cookieName - Name of the cookie
+     * @param {String|Number|Boolean} cookieValue - Value of the cookie
+     * @param {CookieOptions} [options] - Options to set with the cookie
      */
     set( cookieName, cookieValue, options = {} ) {
+        const newExpiration = this.expires();
         const {
-            expiration = this.expires(),
+            expiration = newExpiration,
             sameSite = 'Strict',
             path = '/'
         } = options;
@@ -56,7 +59,7 @@ export const Cookies = {
     },
 
     /**
-     * @param {String} cookieName
+     * @param {String} cookieName - Name of the cookie
      */
     delete( cookieName ) {
         document.cookie = `${ cookieName }=;expires=0;`;
