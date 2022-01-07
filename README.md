@@ -6,13 +6,24 @@ Code is yet poorly commented but I'll improve that and I really welcome any help
 
 Happy Coding everyone !
 
-## Bundling for Browser
+
+## Building for Browser (expose the whole bundle to global scope)
 
 ```shell
-rollup aemi.module.js --file aemi.browser.js --format iife --name Aemi
-
-terser aemi.browser.js -o aemi.browser.min.js --compress --mangle --ecma 2021
+npm run build-bundle
 ```
+
+## Building for browser with module usage
+```shell
+npm run build-module
+```
+
+## Build everything
+```
+npm run build
+```
+
+
 
 ## Usage
 
@@ -33,13 +44,13 @@ git submodule update --init --recursive
 #### Load bundled-version in HTML
 
 ```html
-<script src="<destination folder>/aemi.module.min.js"></script>
+<script src="<destination folder>/aemi.min.js"></script>
 ```
 
 #### Load unbundled-version in HTML
 
 ```html
-<script src="<destination folder>/aemi.module.js" type="module"></script>
+<script src="<destination folder>/aemi.min.js" type="module"></script>
 ```
 
 ### Import in JavaScript
@@ -77,5 +88,5 @@ import {
     Navigator,
     Performance,
     Utils
-} from 'aemi.module.js';
+} from 'aemi.min.js';
 ```

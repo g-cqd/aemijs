@@ -1,9 +1,7 @@
-*.DS_Store
-node_modules
-node_modules/.cache
-node_modules/.cache/esm
-package-lock.json
-target
-.idea
-.vscode
-.dccache
+**.DS_Store
+**/node_modules
+**/node_modules/**/*
+**/package-lock.json
+**/.idea
+**/.vscode
+**/.dccache
