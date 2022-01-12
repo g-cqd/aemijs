@@ -114,7 +114,7 @@ export function data( element, dataset, value ) {
 }
 
 /**
- * @typedef {[string,(this:HTMLElement,ev:any),2:AddEventListenerOptions]} EventListenerArguments
+ * @typedef {[string,(this:HTMLElement,ev:any)=>void,AddEventListenerOptions]} EventListenerArguments
  * @type {Array}
  */
 
@@ -137,8 +137,8 @@ export function data( element, dataset, value ) {
 /**
  * Element Creation Shorthand
  *
- * @param {Array.<ElementCreationShorthandInput|ElementCreationShorthandInput[]|Element|Element[]>} args
- * @returns {HTLMElement}
+ * @param {Array.<ElementCreationShorthandInput|ElementCreationShorthandInput[]|Element|Element[]>} [args]
+ * @returns {HTMLElement}
  */
 export function ecs( ...args ) {
     const { length } = args;
@@ -194,12 +194,14 @@ export function ecs( ...args ) {
     if ( $attr ) {
         objectForEach( $attr, ( key, value ) => {
             if ( value instanceof Promise ) {
-                value.then( response => {
-                    attr( current, key, response );
-                } )
-                    .catch( error => {
+                value.then(
+                    response => {
+                        attr( current, key, response );
+                    },
+                    error => {
                         console.error( error );
-                    } );
+                    }
+                );
             }
             else {
                 attr( current, key, value );
@@ -209,12 +211,14 @@ export function ecs( ...args ) {
     if ( $dataset ) {
         objectForEach( $dataset, ( key, value ) => {
             if ( value instanceof Promise ) {
-                value.then( response => {
-                    current.dataset[key] = response;
-                } )
-                    .catch( error => {
+                value.then(
+                    response => {
+                        current.dataset[key] = response;
+                    },
+                    error => {
                         console.error( error );
-                    } );
+                    }
+                );
             }
             else {
                 current.dataset[key] = value;
@@ -229,13 +233,14 @@ export function ecs( ...args ) {
     if ( $style ) {
         objectForEach( $style, ( key, value ) => {
             if ( value instanceof Promise ) {
-                value.then( response => {
-                    current.style[key] = response;
-                } )
-
-                    .catch( error => {
+                value.then(
+                    response => {
+                        current.style[key] = response;
+                    },
+                    error => {
                         console.error( error );
-                    } );
+                    }
+                );
             }
             current.style[key] = value;
         } );
@@ -251,17 +256,20 @@ export function ecs( ...args ) {
             else if ( item instanceof Promise ) {
                 const template = document.createElement( 'template' );
                 current.appendChild( template );
-                item.then( response => {
-                    if ( typeof response === 'string' ) {
-                        template.outerHTML += response;
-                        template.remove();
+                item.then(
+                    response => {
+                        if ( typeof response === 'string' ) {
+                            template.outerHTML += response;
+                            template.remove();
+                        }
+                        else {
+                            current.replaceChild( ecs( response ), template );
+                        }
+                    },
+                    _ => {
+                        console.error( 'ecs error: ', _ );
                     }
-                    else {
-                        current.replaceChild( ecs( response ), template );
-                    }
-                } ).catch( _ => {
-                    console.error( 'ecs error: ', _ );
-                } );
+                );
             }
             else if ( [ 'number', 'bigint', 'boolean', 'symbol' ].includes( typeof item ) ) {
                 current.innerHTML += `${ item }`;

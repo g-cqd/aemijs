@@ -334,7 +334,7 @@ export function div( dividend, divisor, accuracy = 100 ) {
     Object.defineProperty( BigFloat, 'toString', {
         value: function toString() {
             if ( this.decimal.length > 0 ) {
-                return `${ this.integer }.${ this.decimal.map( r => (r instanceof Array ? r.join( '' ) : r) ).join( '' ) }`.replace( /n/g, '' );
+                return `${ this.integer }.${ this.decimal.map( r => Array.isArray( r ) ? r.join( '' ) : r ).join( '' ) }`.replace( /n/gu, '' );
             }
             return `${ this.integer }`;
         }

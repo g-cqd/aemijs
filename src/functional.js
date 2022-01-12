@@ -221,7 +221,7 @@ export class IArray {
                 return {
                     next: () => ( {
                         value: i < length ? new IArray( i, this[i] ) : undefined,
-                        done: !( i++ < length )
+                        done: i++ >= length
                     } )
                 };
             }
@@ -239,7 +239,7 @@ export class IArray {
                 return {
                     next: () => ( {
                         value: i < length ? i : undefined,
-                        done: !( i++ < length )
+                        done: i++ >= length
                     } )
                 };
             }
@@ -251,9 +251,9 @@ export class IArray {
      * @param {IArray} thisArg
      */
     forEach( callback, thisArg ) {
-        thisArg = thisArg || this;
-        for ( let i = 0, { length } = thisArg; i < length; i += 1 ) {
-            callback( thisArg[i], i, thisArg );
+        const _thisArg = thisArg || this;
+        for ( let i = 0, { length } = _thisArg; i < length; i += 1 ) {
+            callback( _thisArg[i], i, _thisArg );
         }
     }
 
@@ -280,7 +280,7 @@ export class IArray {
      * @param {Number} fromIndex
      * @returns {Number}
      */
-    lastIndexOf(searchElement, fromIndex) {
+    lastIndexOf( searchElement, fromIndex ) {
         for ( let { length } = this, i = fromIndex >= 0 && fromIndex < length ? fromIndex : length; i > 0; i -= 1 ) {
             if ( Object.is( this[i], searchElement ) ) {
                 return i;
@@ -290,8 +290,8 @@ export class IArray {
     }
 
     map( callback, thisArg ) {
-        thisArg = thisArg || this;
-        return new IArray( thisArg.length ).populate( index => callback( thisArg[index], index, thisArg ) );
+        const _thisArg = thisArg || this;
+        return new IArray( _thisArg.length ).populate( index => callback( _thisArg[index], index, _thisArg ) );
     }
 
     reduce( callback, initialValue ) {
@@ -312,21 +312,21 @@ export class IArray {
     }
 
     filter( callback, thisArg ) {
-        thisArg = thisArg || this;
-        const { length } = thisArg;
+        const _thisArg = thisArg || this;
+        const { length } = _thisArg;
         const Mutable = [];
         for ( let i = 0; i < length; i += 1 ) {
-            if ( callback( thisArg[i], i, thisArg ) ) {
-                Mutable.push( thisArg[i] );
+            if ( callback( _thisArg[i], i, _thisArg ) ) {
+                Mutable.push( _thisArg[i] );
             }
         }
         return IArray.toImmutable( Mutable );
     }
 
     every( callback, thisArg ) {
-        thisArg = thisArg || this;
-        for ( let i = 0, { length } = thisArg; i < length; i += 1 ) {
-            if ( !callback( thisArg[i], i, thisArg ) ) {
+        const _thisArg = thisArg || this;
+        for ( let i = 0, { length } = _thisArg; i < length; i += 1 ) {
+            if ( !callback( _thisArg[i], i, _thisArg ) ) {
                 return false;
             }
         }
@@ -334,10 +334,10 @@ export class IArray {
     }
 
     some( callback, thisArg ) {
-        thisArg = thisArg || this;
-        const { length } = thisArg;
+        const _thisArg = thisArg || this;
+        const { length } = _thisArg;
         for ( let i = 0; i < length; i += 1 ) {
-            if ( callback( thisArg[i], i, thisArg ) ) {
+            if ( callback( _thisArg[i], i, _thisArg ) ) {
                 return true;
             }
         }
@@ -345,21 +345,21 @@ export class IArray {
     }
 
     find( callback, thisArg ) {
-        thisArg = thisArg || this;
-        const { length } = thisArg;
+        const _thisArg = thisArg || this;
+        const { length } = _thisArg;
         for ( let i = 0; i < length; i += 1 ) {
-            if ( callback( thisArg[i], i, thisArg ) ) {
-                return thisArg[i];
+            if ( callback( _thisArg[i], i, _thisArg ) ) {
+                return _thisArg[i];
             }
         }
         return undefined;
     }
 
     findIndex( callback, thisArg ) {
-        thisArg = thisArg || this;
-        const { length } = thisArg;
+        const _thisArg = thisArg || this;
+        const { length } = _thisArg;
         for ( let i = 0; i < length; i += 1 ) {
-            if ( callback( thisArg[i], i, thisArg ) ) {
+            if ( callback( _thisArg[i], i, _thisArg ) ) {
                 return i;
             }
         }
@@ -423,11 +423,11 @@ export class IArray {
     }
 
     flatMap( callback, thisArg ) {
-        thisArg = thisArg || this;
-        const { length } = thisArg;
+        const _thisArg = thisArg || this;
+        const { length } = _thisArg;
         const Mutable = [];
         for ( let i = 0; i < length; i += 1 ) {
-            const item = callback( thisArg[i], i, thisArg );
+            const item = callback( _thisArg[i], i, _thisArg );
             if ( IArray.isCollapsable( item ) ) {
                 for ( let j = 0, { length: _length } = item; i < _length; i += 1 ) {
                     if ( typeof item[j] !== 'undefined' ) {
@@ -574,7 +574,7 @@ export class IArray {
         const { length: _length } = args;
         const _sum = length + _length;
         if ( IArray.isImmutable( this ) ) {
-            const Mutable = new IArray( sum );
+            const Mutable = new IArray( _sum );
             for ( let i = 0; i < length; i += 1 ) {
                 Mutable[i] = this[i];
             }
@@ -587,7 +587,7 @@ export class IArray {
             for ( let i = 0; i < _length; i += 1 ) {
                 this[length + i] = args[i];
             }
-            this.length = sum;
+            this.length = _sum;
             return this;
         }
         throw new Error( 'What the fuck are you doing ?' );

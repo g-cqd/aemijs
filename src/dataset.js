@@ -2,6 +2,10 @@
 
 export class DatasetEncoder {
 
+    /**
+     * @param {String} key
+     * @returns {DatasetEncoder}
+     */
     constructor() {
         this.values = [];
     }
@@ -250,12 +254,12 @@ export class DatasetHeader {
      * @param {String|Function} type
      * @param {Boolean} [toBeEncoded]
      */
-    addColumn( key, type, tobeEncoded = false ) {
+    addColumn( key, type, toBeEncoded = false ) {
         const index = this.nextIndex++;
         this.keys.set( index, key );
         this.indexes.set( key, index );
         this.types.set( key, Dataset.parseType( type ) );
-        if ( tobeEncoded ) {
+        if ( toBeEncoded ) {
             this.encoders.set( key, new DatasetEncoder( key ) );
         }
     }
@@ -344,7 +348,7 @@ export class Dataset {
                 const last = elements.slice( -5 );
                 for ( const item of first ) {
                     if ( Array.isArray( item[0] ) ) {
-                        console.log( '[ ', item.map( k =>  Array.isArray( k ) ? `\n  [ ${ k.join( ', ' ) } ]` : k  ).join( ', ' ), '\n]' );
+                        console.log( '[ ', item.map( k => (Array.isArray( k ) ? `\n  [ ${ k.join( ', ' ) } ]` : k) ).join( ', ' ), '\n]' );
                     }
                     else {
                         console.log( '[ ', item.join( ', ' ), ' ]' );
@@ -355,7 +359,7 @@ export class Dataset {
                 }
                 for ( const item of last ) {
                     if ( Array.isArray( item[0] ) ) {
-                        console.log( '[ ', item.map( k => Array.isArray( k ) ? `\n  [ ${k.join( ', ' )} ]` : k ).join( ', ' ), '\n]' );
+                        console.log( '[ ', item.map( k => (Array.isArray( k ) ? `\n  [ ${k.join( ', ' )} ]` : k) ).join( ', ' ), '\n]' );
                     }
                     else {
                         console.log( '[ ', item.join( ', ' ), ' ]' );
@@ -365,7 +369,7 @@ export class Dataset {
             else {
                 for ( const item of elements ) {
                     if ( Array.isArray( item[0] ) ) {
-                        console.log( '[ ', item.map( k => Array.isArray( k ) ? `\n  [ ${k.join( ', ' )} ]` : k ).join( ', ' ), '\n]' );
+                        console.log( '[ ', item.map( k => (Array.isArray( k ) ? `\n  [ ${k.join( ', ' )} ]` : k) ).join( ', ' ), '\n]' );
                     }
                     else {
                         console.log( '[ ', item.join( ', ' ), ' ]' );
@@ -394,7 +398,7 @@ export class Dataset {
      * @returns {String[]}
      */
     static _getLines( fileContentString ) {
-        return fileContentString.split( /\n/g );
+        return fileContentString.split( /\n/ug );
     }
 
     /**
@@ -402,7 +406,7 @@ export class Dataset {
      * @returns {Array<String[]>}
      */
     static _getCells( fileRowsStrings ) {
-        return fileRowsStrings.map( row => row.replace( /\r/g, '' ).split( /,/g )
+        return fileRowsStrings.map( row => row.replace( /\r/ug, '' ).split( /,/ug )
             .map( cell => cell.trim() ) );
     }
 
@@ -525,44 +529,47 @@ export class Dataset {
      * @returns {Function}
      */
     static parseType( type ) {
-        function to_same( value ) {
+        function toSame( value ) {
             return value === '' ? undefined : value;
         }
         if ( typeof type === 'function' ) {
-            return function to_custom( value ) {
+            return function toCustom( value ) {
                 return type( value );
             };
         }
         switch ( type ) {
             case 'number': {
-                return function to_number( value ) {
-                    const new_value = to_same( value );
-                    return new_value === undefined ? NaN : isNaN( +new_value ) ? NaN : +new_value;
+                return function toNumber( value ) {
+                    const newValue = toSame( value );
+                    if ( newValue === undefined || Number.isNaN( +newValue ) ) {
+                        return NaN;
+                    }
+                    return +newValue;
                 };
             }
             case 'bigint': {
-                return function to_bigint( value ) {
-                    return BigInt( to_same( value ) );
+                return function toBigInt( value ) {
+                    return BigInt( toSame( value ) );
                 };
             }
             case 'boolean': {
-                return function to_boolean( value ) {
-                    const new_value = to_same( value );
-                    return isNaN( +new_value ) ? Boolean( new_value ) : !!+new_value;
+                return function toBoolean( value ) {
+                    const newValue = toSame( value );
+                    return Number.isNaN( +newValue ) ? Boolean( newValue ) : !!+newValue;
                 };
             }
             case 'object': {
-                return function to_object( value ) {
-                    return JSON.parse( to_same( value ) );
+                return function toObject( value ) {
+                    return JSON.parse( toSame( value ) );
                 };
             }
             case 'string': {
-                return function to_string( value ) {
-                    return String( to_same( value ) );
+                return function toString( value ) {
+                    return String( toSame( value ) );
                 };
             }
             default: {
-                return to_same;
+                return toSame;
             }
         }
     }
@@ -661,7 +668,7 @@ export class Dataset {
         const indexesToRemove = this.header.removeColumns( _keys );
         return new Promise( resolve => {
             this.mapAsync( row => row.filter( ( _, index ) => !indexesToRemove.includes( index ) ) )
-                .then( () => resolve( true ) );
+                .then( () => resolve( true ), console.error );
         } );
     }
 
@@ -791,7 +798,7 @@ export class Dataset {
 
     /**
      * @param {String} key
-     * @param {*} cells
+     * @param {*} cell
      * @returns {*}
      */
     decodeCell( key, cell ) {
@@ -909,7 +916,7 @@ export class Dataset {
         }
 
         if ( keys.some( k => typeof k === 'string' ) ) {
-            keys = keys.map( k => typeof k === 'string' ? [this.header.getColumnIndexByColumnKey( k )] : [k] );
+            keys = keys.map( k => (typeof k === 'string' ? [this.header.getColumnIndexByColumnKey( k )] : [k]) );
         }
 
         [ indexes, sortFunctionMap ] = ( keys.some( ( [ k ] ) => typeof k === 'string' ) ?
@@ -922,8 +929,8 @@ export class Dataset {
             }, [ [], new Map() ] );
 
         if ( keys.length > 1 ) {
-            const groupped = Dataset._groupBy( this.rows, indexes );
-            const flatted = Dataset._flat( indexes, groupped, { sortFunctionMap } );
+            const grouped = Dataset._groupBy( this.rows, indexes );
+            const flatted = Dataset._flat( indexes, grouped, { sortFunctionMap } );
             if ( inplace ) {
                 this.rows = flatted;
                 return this.rows;
@@ -974,8 +981,8 @@ export class Dataset {
         }
 
         if ( keyFilters.length > 1 ) {
-            const groupped = Dataset._groupBy( this.rows, indexes );
-            const flatted = Dataset._flat( indexes, groupped, { filterFunctionMap, groupByFilterFunctionMap } );
+            const grouped = Dataset._groupBy( this.rows, indexes );
+            const flatted = Dataset._flat( indexes, grouped, { filterFunctionMap, groupByFilterFunctionMap } );
             if ( inplace ) {
                 this.rows = flatted;
                 return this.rows;
