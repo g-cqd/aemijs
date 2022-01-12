@@ -1,16 +1,16 @@
 /**
- * @param  {...Function} funcs 
+ * @param  {...Function} funcs
  * @returns {Function}
  */
-function pipe ( ...funcs ) {
+function pipe( ...funcs ) {
     if ( funcs.length > 0 ) {
         return funcs.reduce( ( acc, curr ) => arg => curr( acc( arg ) ) );
     }
     throw new Error( 'No function passed.' );
-};
+}
 
 /**
- * @param  {...Function} funcs 
+ * @param  {...Function} funcs
  * @returns {Function}
  */
 function compose( ...funcs ) {
@@ -23,18 +23,18 @@ function compose( ...funcs ) {
 class IArray {
 
     static toImmutable( thisArg ) {
-        if ( !( IArray.isIArray( thisArg ) ) ) {
+        if ( !IArray.isIArray( thisArg ) ) {
             if (
-                Array.isArray( thisArg )
-                || Symbol.iterator in thisArg &&
+                Array.isArray( thisArg ) ||
+                Symbol.iterator in thisArg &&
                 typeof thisArg.length !== 'undefined' &&
                 typeof thisArg[0] !== 'undefined'
             ) {
                 return Object.freeze( Object.setPrototypeOf( thisArg, IArray.prototype ) );
             }
-            else {
-                throw new TypeError( 'Please use IArray.from' );
-            }
+
+            throw new TypeError( 'Please use IArray.from' );
+
         }
         else {
             return Object.freeze( thisArg );
@@ -73,9 +73,9 @@ class IArray {
     }
 
     static isIArray( instance ) {
-        return Object.getPrototypeOf( instance ) === IArray.prototype
-            && 'length' in instance
-            && ( !Object.isExtensible( instance ) || Object.isFrozen( instance ) );
+        return Object.getPrototypeOf( instance ) === IArray.prototype &&
+            'length' in instance &&
+            ( !Object.isExtensible( instance ) || Object.isFrozen( instance ) );
     }
 
     static [Symbol.hasInstance]( instance ) {
@@ -94,9 +94,9 @@ class IArray {
         return Object.isFrozen( instance );
     }
 
-    constructor ( ...args ) {
+    constructor( ...args ) {
         const { length } = args;
-        if ( length === 1 && typeof args[0] === 'number') {
+        if ( length === 1 && typeof args[0] === 'number' ) {
             this.length = args[0];
         }
         else {
@@ -108,12 +108,12 @@ class IArray {
     [Symbol.iterator]() {
         const { length } = this;
         let i = 0;
-        return ( {
+        return {
             next: () => ( {
                 value: i < length ? this[i] : undefined,
-                done: !( i++ < length )
+                done: i++ >= length
             } )
-        } );
+        };
     }
 
     /**
@@ -142,7 +142,7 @@ class IArray {
     }
 
     /**
-     * @param {any} value 
+     * @param {any} value
      * @returns {IArray}
      */
     fill( value, start, end ) {
@@ -161,7 +161,7 @@ class IArray {
     }
 
     /**
-     * @param {Function} value 
+     * @param {Function} value
      * @returns {IArray}
      */
     populate( callback ) {
@@ -177,7 +177,7 @@ class IArray {
     }
 
     /**
-     * @param {Number} i 
+     * @param {Number} i
      * @returns {any}
      */
     at( i ) {
@@ -188,53 +188,53 @@ class IArray {
      * @returns {Iterable<any>}
      */
     values() {
-        return ( { [Symbol.iterator]: this[Symbol.iterator] } );
+        return { [Symbol.iterator]: this[Symbol.iterator] };
     }
 
     /**
      * @returns {Iterable<Number,any>}
      */
     entries() {
-        return ( {
+        return {
             [Symbol.iterator]: () => {
                 const { length } = this;
                 let i = 0;
-                return ( {
+                return {
                     next: () => ( {
                         value: i < length ? new IArray( i, this[i] ) : undefined,
-                        done: !( i++ < length )
+                        done: i++ >= length
                     } )
-                } );
+                };
             }
-        } );
+        };
     }
 
     /**
      * @returns {Iterable<Number>}
      */
     keys() {
-        return ( {
+        return {
             [Symbol.iterator]: () => {
                 const { length } = this;
                 let i = 0;
-                return ( {
+                return {
                     next: () => ( {
                         value: i < length ? i : undefined,
-                        done: !( i++ < length )
+                        done: i++ >= length
                     } )
-                } );
+                };
             }
-        } );
+        };
     }
 
     /**
-     * @param {Function} callback 
-     * @param {IArray} thisArg 
+     * @param {Function} callback
+     * @param {IArray} thisArg
      */
     forEach( callback, thisArg ) {
-        thisArg = thisArg || this;
-        for ( let i = 0, { length } = thisArg; i < length; i += 1 ) {
-            callback( thisArg[i], i, thisArg );
+        const _thisArg = thisArg || this;
+        for ( let i = 0, { length } = _thisArg; i < length; i += 1 ) {
+            callback( _thisArg[i], i, _thisArg );
         }
     }
 
@@ -266,8 +266,8 @@ class IArray {
     }
 
     map( callback, thisArg ) {
-        thisArg = thisArg || this;
-        return new IArray( thisArg.length ).populate( index => callback( thisArg[index], index, thisArg ) );
+        const _thisArg = thisArg || this;
+        return new IArray( _thisArg.length ).populate( index => callback( _thisArg[index], index, _thisArg ) );
     }
 
     reduce( callback, initialValue ) {
@@ -288,21 +288,21 @@ class IArray {
     }
 
     filter( callback, thisArg ) {
-        thisArg = thisArg || this;
-        const { length } = thisArg;
+        const _thisArg = thisArg || this;
+        const { length } = _thisArg;
         const Mutable = [];
         for ( let i = 0; i < length; i += 1 ) {
-            if ( !!callback( thisArg[i], i, thisArg ) ) {
-                Mutable.push( thisArg[i] );
+            if ( callback( _thisArg[i], i, _thisArg ) ) {
+                Mutable.push( _thisArg[i] );
             }
         }
         return IArray.toImmutable( Mutable );
     }
 
     every( callback, thisArg ) {
-        thisArg = thisArg || this;
-        for ( let i = 0, { length } = thisArg; i < length; i += 1 ) {
-            if ( !callback( thisArg[i], i, thisArg ) ) {
+        const _thisArg = thisArg || this;
+        for ( let i = 0, { length } = _thisArg; i < length; i += 1 ) {
+            if ( !callback( _thisArg[i], i, _thisArg ) ) {
                 return false;
             }
         }
@@ -310,10 +310,10 @@ class IArray {
     }
 
     some( callback, thisArg ) {
-        thisArg = thisArg || this;
-        const { length } = thisArg;
+        const _thisArg = thisArg || this;
+        const { length } = _thisArg;
         for ( let i = 0; i < length; i += 1 ) {
-            if ( !!callback( thisArg[i], i, thisArg ) ) {
+            if ( callback( _thisArg[i], i, _thisArg ) ) {
                 return true;
             }
         }
@@ -321,11 +321,11 @@ class IArray {
     }
 
     find( callback, thisArg ) {
-        thisArg = thisArg || this;
-        const { length } = thisArg;
+        const _thisArg = thisArg || this;
+        const { length } = _thisArg;
         for ( let i = 0; i < length; i += 1 ) {
-            if ( !!callback( thisArg[i], i, thisArg ) ) {
-                return thisArg[i];
+            if ( callback( _thisArg[i], i, _thisArg ) ) {
+                return _thisArg[i];
             }
         }
         return undefined;
@@ -345,7 +345,7 @@ class IArray {
     reverse() {
         const { length } = this;
         const Mutable = new IArray( length );
-        for ( let i = 1; i <= length; i -= 1 ) {
+        for ( let i = 1; i <= length; i += 1 ) {
             Mutable[i - 1] = this[length - i];
         }
         return Object.freeze( Mutable );
@@ -399,11 +399,11 @@ class IArray {
     }
 
     flatMap( callback, thisArg ) {
-        thisArg = thisArg || this;
-        const { length } = thisArg;
+        const _thisArg = thisArg || this;
+        const { length } = _thisArg;
         const Mutable = [];
         for ( let i = 0; i < length; i += 1 ) {
-            const item = callback( thisArg[i], i, thisArg );
+            const item = callback( _thisArg[i], i, _thisArg );
             if ( IArray.isCollapsable( item ) ) {
                 for ( let j = 0, { length: _length } = item; i < _length; i += 1 ) {
                     if ( typeof item[j] !== 'undefined' ) {
@@ -466,7 +466,7 @@ class IArray {
         const _start = typeof start === 'undefined' ? 0 : start < 0 ? length + start : start > length ? length : start;
         const _end = typeof end === 'undefined' ? length : end < 0 ? length + end : end > length ? length : end;
         let _index = 0;
-        let [toCopy, startCopy] = _start < _end ? [_end - _start, _start] : [_start - _end, _end];
+        let [ toCopy, startCopy ] = _start < _end ? [ _end - _start, _start ] : [ _start - _end, _end ];
         for ( let i = 0; i < length; i += 1 ) {
             if ( i >= target && toCopy-- > 0 ) {
                 Mutable[_index] = this[startCopy++];
@@ -483,7 +483,7 @@ class IArray {
         const { length } = this;
         let string = '';
         for ( let i = 0; i < length; i += 1 ) {
-            string = `${string}${separator}${this[i]}`;
+            string = `${ string }${ separator }${ this[i] }`;
         }
         return string;
     }
@@ -491,7 +491,9 @@ class IArray {
     sort( callback ) {
         callback = callback || ( ( a, b ) => a < b ? -1 : a > b ? 1 : 0 );
         const { length } = this;
-        if ( length <= 1 ) { return IArray.from( this ); }
+        if ( length <= 1 ) {
+            return IArray.from( this );
+        }
         const middle = Math.floor( length / 2 );
         const left = this.slice( 0, middle );
         const right = this.slice( middle );
@@ -506,7 +508,8 @@ class IArray {
             while ( leftIndex < ll && rightIndex < rl ) {
                 if ( callback( left[leftIndex], right[rightIndex] ) < 0 ) {
                     Mutable[globalIndex++] = left[leftIndex++];
-                } else {
+                }
+                else {
                     Mutable[globalIndex++] = right[rightIndex++];
                 }
             }
@@ -530,40 +533,42 @@ class IArray {
             return this.flat( Infinity );
         }
         let array = this.flat( Infinity );
-        let { length: fLength } = array;
-        if ( length >= 1 && ( ( fLength % args.reduce( ( acc, curr ) => acc * curr ) !== 0 ) || ( fLength % args[0] !== 0 ) ) ) {
-            throw new RangeError( `An array of shape (${fLength}, 1)  can not be converted to an array of shape (${args.join( ',' )})` );   
+        const { length: fLength } = array;
+        if ( length >= 1 && ( fLength % args.reduce( ( acc, curr ) => acc * curr ) !== 0 || fLength % args[0] !== 0 ) ) {
+            throw new RangeError( `An array of shape (${ fLength }, 1)  can not be converted to an array of shape (${ args.join( ',' ) })` );
         }
         for ( let i = length - 1; i >= 0; i -= 1 ) {
             const dimension = args[i];
             const _length = array.length / dimension;
-            array = new IArray( _length ).populate( i => new IArray( dimension ).populate( j => array[i * dimension + j] ) )
+            array = new IArray( _length ).populate( i => new IArray( dimension ).populate( j => array[i * dimension + j] ) );
         }
         return array;
     }
+
     push( ...args ) {
         const { length } = this;
         const { length: _length } = args;
         const _sum = length + _length;
         if ( IArray.isImmutable( this ) ) {
-            const Mutable = new IArray( sum );
+            const Mutable = new IArray( _sum );
             for ( let i = 0; i < length; i += 1 ) {
                 Mutable[i] = this[i];
             }
             for ( let i = 0; i < _length; i += 1 ) {
                 Mutable[i + length] = args[i];
             }
-            return Object.freeze( Mutable );   
+            return Object.freeze( Mutable );
         }
         if ( IArray.isResizable( this ) ) {
             for ( let i = 0; i < _length; i += 1 ) {
                 this[length + i] = args[i];
             }
-            this.length = sum;
+            this.length = _sum;
             return this;
         }
         throw new Error( 'What the fuck are you doing ?' );
     }
+
     empty() {
         if ( IArray.isImmutable( this ) ) {
             throw new TypeError( 'As an immutable data structure, <empty> method can not be called on it.' );
@@ -575,6 +580,7 @@ class IArray {
         }
         return this;
     }
-};
+
+}
 
 module.exports = { pipe, compose, IArray };

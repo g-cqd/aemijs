@@ -1,284 +1,308 @@
+/* eslint-env node */
+
 /**
  * Set of timing functions
  */
-const Easing = {
+export const Easing = {
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Linear
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    linearTween: function ( t, b, c, d ) {
-        return ( c * t ) / d + b;
+    linearTween( t, b, c, d ) {
+        return c * t / d + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Quadratic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInQuad: function ( t, b, c, d ) {
+    easeInQuad( t, b, c, d ) {
         t /= d;
         return c * t * t + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Quadratic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeOutQuad: function ( t, b, c, d ) {
+    easeOutQuad( t, b, c, d ) {
         t /= d;
         return -c * t * ( t - 2 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Quadratic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInOutQuad: function ( t, b, c, d ) {
+    easeInOutQuad( t, b, c, d ) {
         t /= d / 2;
         if ( t < 1 ) {
-            return ( c / 2 ) * t * t + b;
+            return c / 2 * t * t + b;
         }
         t--;
-        return ( -c / 2 ) * ( t * ( t - 2 ) - 1 ) + b;
+        return -c / 2 * ( t * ( t - 2 ) - 1 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Cubic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInCubic: function ( t, b, c, d ) {
+    easeInCubic( t, b, c, d ) {
         t /= d;
         return c * t * t * t + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Cubic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeOutCubic: function ( t, b, c, d ) {
+    easeOutCubic( t, b, c, d ) {
         t /= d;
         t--;
         return c * ( t * t * t + 1 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Cubic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInOutCubic: function ( t, b, c, d ) {
+    easeInOutCubic( t, b, c, d ) {
         t /= d / 2;
         if ( t < 1 ) {
-            return ( c / 2 ) * t * t * t + b;
+            return c / 2 * t * t * t + b;
         }
         t -= 2;
-        return ( c / 2 ) * ( t * t * t + 2 ) + b;
+        return c / 2 * ( t * t * t + 2 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Quartic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInQuart: function ( t, b, c, d ) {
+    easeInQuart( t, b, c, d ) {
         t /= d;
         return c * t * t * t * t + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Quartic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeOutQuart: function ( t, b, c, d ) {
+    easeOutQuart( t, b, c, d ) {
         t /= d;
         t--;
         return -c * ( t * t * t * t - 1 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Quartic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInOutQuart: function ( t, b, c, d ) {
+    easeInOutQuart( t, b, c, d ) {
         t /= d / 2;
         if ( t < 1 ) {
-            return ( c / 2 ) * t * t * t * t + b;
+            return c / 2 * t * t * t * t + b;
         }
         t -= 2;
-        return ( -c / 2 ) * ( t * t * t * t - 2 ) + b;
+        return -c / 2 * ( t * t * t * t - 2 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Quintic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInQuint: function ( t, b, c, d ) {
+    easeInQuint( t, b, c, d ) {
         t /= d;
         return c * t * t * t * t * t + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Quintic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeOutQuint: function ( t, b, c, d ) {
+    easeOutQuint( t, b, c, d ) {
         t /= d;
         t--;
         return c * ( t * t * t * t * t + 1 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Quintic
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInOutQuint: function ( t, b, c, d ) {
+    easeInOutQuint( t, b, c, d ) {
         t /= d / 2;
         if ( t < 1 ) {
-            return ( c / 2 ) * t * t * t * t * t + b;
+            return c / 2 * t * t * t * t * t + b;
         }
         t -= 2;
-        return ( c / 2 ) * ( t * t * t * t * t + 2 ) + b;
+        return c / 2 * ( t * t * t * t * t + 2 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Sinusoidal
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInSine: function ( t, b, c, d ) {
-        return -c * Math.cos( ( t / d ) * ( Math.PI / 2 ) ) + c + b;
+    easeInSine( t, b, c, d ) {
+        return -c * Math.cos( t / d * ( Math.PI / 2 ) ) + c + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Sinusoidal
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeOutSine: function ( t, b, c, d ) {
-        return c * Math.sin( ( t / d ) * ( Math.PI / 2 ) ) + b;
+    easeOutSine( t, b, c, d ) {
+        return c * Math.sin( t / d * ( Math.PI / 2 ) ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Sinusoidal
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInOutSine: function ( t, b, c, d ) {
-        return ( -c / 2 ) * ( Math.cos( ( Math.PI * t ) / d ) - 1 ) + b;
+    easeInOutSine( t, b, c, d ) {
+        return -c / 2 * ( Math.cos( Math.PI * t / d ) - 1 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Exponential
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInExpo: function ( t, b, c, d ) {
-        return c * Math.pow( 2, 10 * ( t / d - 1 ) ) + b;
+    easeInExpo( t, b, c, d ) {
+        return c * 2 ** ( 10 * ( t / d - 1 ) ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Exponential
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeOutExpo: function ( t, b, c, d ) {
-        return c * ( -Math.pow( 2, ( -10 * t ) / d ) + 1 ) + b;
+    easeOutExpo( t, b, c, d ) {
+        return c * ( -( 2 ** ( -10 * t / d ) ) + 1 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Exponential
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInOutExpo: function ( t, b, c, d ) {
+    easeInOutExpo( t, b, c, d ) {
         t /= d / 2;
         if ( t < 1 ) {
-            return ( c / 2 ) * Math.pow( 2, 10 * ( t - 1 ) ) + b;
+            return c / 2 * 2 ** ( 10 * ( t - 1 ) ) + b;
         }
         t--;
-        return ( c / 2 ) * ( -Math.pow( 2, -10 * t ) + 2 ) + b;
+        return c / 2 * ( -( 2 ** ( -10 * t ) ) + 2 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Circular
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInCirc: function ( t, b, c, d ) {
+    easeInCirc( t, b, c, d ) {
         t /= d;
         return -c * ( Math.sqrt( 1 - t * t ) - 1 ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
+     * Circular
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
      * @returns {Number}
      */
-    easeOutCirc: function ( t, b, c, d ) {
+    easeOutCirc( t, b, c, d ) {
         t /= d;
         t--;
         return c * Math.sqrt( 1 - t * t ) + b;
     },
     /**
-     * @param {Number} t 
-     * @param {Number} b 
-     * @param {Number} c 
-     * @param {Number} d 
-     * @returns {Number}
+     * Circular
+     * @param {Number} t - Current time
+     * @param {Number} b - Start value
+     * @param {Number} c - Change in value
+     * @param {Number} d - Duration
+     * @returns {Number} - Current value
      */
-    easeInOutCirc: function ( t, b, c, d ) {
+    easeInOutCirc( t, b, c, d ) {
         t /= d / 2;
         if ( t < 1 ) {
-            return ( -c / 2 ) * ( Math.sqrt( 1 - t * t ) - 1 ) + b;
+            return -c / 2 * ( Math.sqrt( 1 - t * t ) - 1 ) + b;
         }
         t -= 2;
-        return ( c / 2 ) * ( Math.sqrt( 1 - t * t ) + 1 ) + b;
+        return c / 2 * ( Math.sqrt( 1 - t * t ) + 1 ) + b;
     }
 };
 
 
 /**
- * 
- * @param {Number|BigInt} dividend 
- * @param {Number|BigInt} divisor 
+ *
+ * @param {Number|BigInt} dividend
+ * @param {Number|BigInt} divisor
  * @param {Number} accuracy
  * @returns {{integer:BigInt,digits:Number[]}}
  */
 function div( dividend, divisor, accuracy = 100 ) {
-        
-    function add_digit( bigFloat, digit ) {
+
+    function addDigit( bigFloat, digit ) {
         if ( bigFloat.digits[last].length === 1000 ) {
             bigFloat.digits.push( [] );
             last += 1;
@@ -286,7 +310,7 @@ function div( dividend, divisor, accuracy = 100 ) {
         bigFloat.digits[last].push( digit );
         accuracy -= 1;
     }
-        
+
     const BigIntDividend = BigInt( dividend );
     const BigIntDivisor = BigInt( divisor );
 
@@ -299,16 +323,16 @@ function div( dividend, divisor, accuracy = 100 ) {
 
     let last = 0;
 
-    const BigFloat = { integer: 0n, digits: [[]] };
+    const BigFloat = { integer: 0n, digits: [ [] ] };
 
     BigFloat.integer = BigIntQuotient;
 
     Object.defineProperty( BigFloat, 'toString', {
         value: function toString() {
             if ( this.digits.length > 0 ) {
-                return `${this.integer}.${this.digits.map( r => r instanceof Array ? r.join( '' ) : r ).join( '' )}`.replace( /n/g, '' );
+                return `${ this.integer }.${ this.digits.map( r => Array.isArray( r ) ? r.join( '' ) : r ).join( '' ) }`.replace( /n/gu, '' );
             }
-            return `${this.integer}`;
+            return `${ this.integer }`;
         }
     } );
 
@@ -323,30 +347,30 @@ function div( dividend, divisor, accuracy = 100 ) {
         if ( r === 0n ) {
             break;
         }
-                
-        const quotient = r / BigIntDivisor;
-        const remainder = r - ( quotient * BigIntDivisor );
 
-        add_digit( BigFloat, Number( quotient ) );
+        const quotient = r / BigIntDivisor;
+        const remainder = r - quotient * BigIntDivisor;
+
+        addDigit( BigFloat, Number( quotient ) );
 
         if ( remainder > 0 ) {
             r = remainder;
         }
         else {
-            add_digit( BigFloat, Number( quotient ) );
+            addDigit( BigFloat, Number( quotient ) );
             break;
         }
 
         if ( r < BigIntDivisor ) {
-            r = r * 10n;
+            r *= 10n;
         }
     }
     return BigFloat;
 }
 
 /**
- * @param {Number|BigInt} number 
- * @param {Number|BigInt} factor 
+ * @param {Number|BigInt} number
+ * @param {Number|BigInt} factor
  * @returns {BigInt}
  */
 function mul( number, factor ) {
@@ -355,7 +379,7 @@ function mul( number, factor ) {
 
 /**
  * @param {Number} target
- * @returns {BigInt} 
+ * @returns {BigInt}
  */
 function fact( target ) {
     let n = BigInt( target );
@@ -370,23 +394,23 @@ function fact( target ) {
 }
 
 /**
- * @param {Number|BigInt} number 
+ * @param {Number|BigInt} number
  * @param {Number} exp
- * @returns {BigInt} 
+ * @returns {BigInt}
  */
 function pow( number, exp ) {
     return BigInt( number ) ** BigInt( exp );
 }
 
 /**
- * @param {Number} number 
- * @returns {BigInt} 
+ * @param {Number} number
+ * @returns {BigInt}
  */
 function fib( index ) {
     let n0 = 0n;
     let n1 = 1n;
     for ( let nx = 2; nx <= index; nx += 1 ) {
-        [n0, n1] = [n1, n0 + n1];
+        [ n0, n1 ] = [ n1, n0 + n1 ];
     }
     return n0;
 }
