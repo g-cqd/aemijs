@@ -29,7 +29,8 @@ function isNode() {
  * @returns {Boolean}
  */
 export function isWorker() {
-    return typeof this.document !== 'undefined';
+    const _global = getGlobal();
+    return !( 'document' in _global && typeof _global.document !== 'undefined' );
 }
 
 /**
@@ -109,12 +110,61 @@ export function newUID( length = 16 ) {
         .join( '' );
 }
 
+/**
+ * Remove starting slashes
+ *
+ * @param {string} path
+ * @returns {string}
+ */
+export function removeStartingSlash( path ) {
+    return `${ path.replace( /^\/*/gu, '' ) }`;
+}
+
+/**
+ * Remove trailing slashes
+ *
+ * @param {string} path
+ * @returns {string}
+ */
+export function removeTrailingSlash( path ) {
+    return `${ path.replace( /\/*$/gu, '' ) }`;
+}
+
+/**
+ * Remove starting and trailing slashes
+ *
+ * @param {string} path
+ * @returns
+ */
+export function removeBothSlashes( path ) {
+    return `${ path.replace( /(?:^\/*|\/*$)/gu, '' ) }`;
+}
+
+/**
+ * Get last path element without path nor extension
+ *
+ * @param {string} path - Path to file
+ * @returns {string}
+ */
+export function getLastPath( path ) {
+    return path
+        .split( /\//gu )
+        .pop()
+        .split( /\./gu )
+        .filter( str => str.length > 0 )
+        .shift();
+}
+
 export default {
-    isBrowser,
-    isWorker,
-    isNode,
     getGlobal,
+    getLastPath,
+    isBrowser,
+    isNode,
+    isWorker,
+    newUID,
     objectForEach,
     objectMap,
-    newUID
+    removeBothSlashes,
+    removeStartingSlash,
+    removeTrailingSlash
 };

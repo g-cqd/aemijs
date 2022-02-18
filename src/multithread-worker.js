@@ -1,13 +1,22 @@
 /* eslint-env browser,worker */
 
-class ExtenderWorkerHandler {
+class ExtendedWorkerHandler {
+
+    /**
+     * @typedef {Object} ExtendedWorkerListenerOptions
+     * @property {boolean} keepMessageEvent
+     * @property {string} propertyAccessor
+     */
+
+    /**
+     * @typedef {ExtendedWorkerHandler & Proxy} ExtendedWorkerHandlerProxy
+     */
 
     constructor() {
         this.typeListeners = {};
         this.addTypeListener( 'default', value => value );
-        this.self.onmessage = messageEvent => {
-            this.listen( messageEvent );
-        };
+        this.self.onmessage = message => this.listen( message );
+        this.self._ = this.proxy;
     }
 
     /**
@@ -15,7 +24,21 @@ class ExtenderWorkerHandler {
      */
     // eslint-disable-next-line class-methods-use-this
     get self() {
-        return globalThis;
+        return globalThis || window;
+    }
+
+    /**
+     * @returns {ExtendedWorkerHandlerProxy}
+     */
+    get proxy() {
+        return new Proxy( this, {
+            get: ( target, property ) => {
+                if ( property in target ) {
+                    return target[property];
+                }
+                return ( func, options ) => target.addTypeListener( property, func, options || { propertyAccessor: 'data' } );
+            }
+        } );
     }
 
     /**
@@ -40,10 +63,7 @@ class ExtenderWorkerHandler {
     /**
      * @param {String} type - Message Type to look for when receiving a message
      * @param {Function} func - Message Handler to call
-     * @param {{
-     *   keepMessageEvent:Boolean,
-     *   propertyAccessor:String
-     * }} [options] - Options used to parse message data
+     * @param {ExtendedWorkerListenerOptions} [options] - Options used to parse message data
      * @returns {void}
      */
     addTypeListener( type, func, options = {} ) {
