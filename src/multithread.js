@@ -1,36 +1,43 @@
 /* eslint-env module */
 
-import { getLastPath, isWorker, removeStartingSlash } from './utils.js';
+import { getLastPath, removeStartingSlash } from './utils.js';
 
-export class ExtendedWorkerHandler {
+
+/**
+ * @callback MessageHandler
+ * @param {any} Event
+ * @returns {any}
+ */
+
+export class PromiseHandler {
 
     /**
-     * @typedef {Object} ExtendedWorkerListenerOptions
-     * @property {boolean} keepMessageEvent
-     * @property {string} propertyAccessor
+     * @typedef {Object} PromiseListenerOptions
+     * @property {boolean} keepEvent
+     * @property {string} accessor
      */
 
     /**
-     * @typedef {ExtendedWorkerHandler & Proxy} ExtendedWorkerHandlerProxy
+     * @typedef {PromiseHandler & Proxy} PromiseHandlerProxy
      */
 
     constructor() {
-        this.typeListeners = {};
-        this.addTypeListener( 'default', value => value );
-        this.self.onmessage = message => this.listen( message );
-        this.self._ = this.proxy;
+        this.listeners = Object.create( null );
+        this.addListener( 'default', value => value );
+        this.worker.onmessage = message => this.listen( message );
+        this.worker._ = this.proxy;
     }
 
     /**
      * @returns {globalThis}
      */
     // eslint-disable-next-line class-methods-use-this
-    get self() {
-        return globalThis || window;
+    get worker() {
+        return globalThis || self || window;
     }
 
     /**
-     * @returns {ExtendedWorkerHandlerProxy}
+     * @returns {PromiseHandlerProxy}
      */
     get proxy() {
         return new Proxy( this, {
@@ -38,7 +45,7 @@ export class ExtendedWorkerHandler {
                 if ( property in target ) {
                     return target[property];
                 }
-                return ( func, options ) => target.addTypeListener( property, func, options || { propertyAccessor: 'data' } );
+                return ( func, options ) => target.addListener( property, func, options || { accessor: 'data' } );
             }
         } );
     }
@@ -50,37 +57,36 @@ export class ExtendedWorkerHandler {
     listen( messageEvent ) {
         const { id, data } = messageEvent.data;
         if ( typeof data === 'object' && 'type' in data ) {
-            if ( data.type in this.typeListeners ) {
-                this.typeListeners[data.type]( id, data, messageEvent );
+            if ( data.type in this.listeners ) {
+                this.listeners[data.type]( id, data, messageEvent );
             }
             else {
-                this.typeListeners.default( id, data, messageEvent );
+                this.listeners.default( id, data, messageEvent );
             }
         }
         else {
-            this.typeListeners.default( id, data, messageEvent );
+            this.listeners.default( id, data, messageEvent );
         }
     }
 
     /**
      * @param {String} type - Message Type to look for when receiving a message
      * @param {Function} func - Message Handler to call
-     * @param {ExtendedWorkerListenerOptions} [options] - Options used to parse message data
+     * @param {PromiseListenerOptions} [options] - Options used to parse message data
      * @returns {void}
      */
-    addTypeListener( type, func, options = {} ) {
-        const { keepMessageEvent, propertyAccessor } = options;
-        this.typeListeners[type] = ( id, data, messageEvent ) => {
-            const _data = propertyAccessor ? data[propertyAccessor] : data;
-            const _args = keepMessageEvent ? [ messageEvent, _data ] : [ _data ];
+    addListener( type, func, options = {} ) {
+        const { keepEvent, accessor } = options;
+        this.listeners[type] = ( id, data, messageEvent ) => {
+            const _data = accessor ? data[accessor] : data;
+            const _args = keepEvent ? [ messageEvent, _data ] : [ _data ];
             const _value = func( ..._args );
             if ( _value instanceof Promise ) {
-                _value.then( value => {
-                    this.self.postMessage( { id, data: value } );
-                } ).catch( console.error );
+                _value.then( value => this.worker.postMessage( { id, data: value } ) );
+                _value.catch( console.error );
             }
             else {
-                this.self.postMessage( { id, data: _value } );
+                this.worker.postMessage( { id, data: _value } );
             }
         };
     }
@@ -94,7 +100,7 @@ export class ExtendedWorker {
      * @typedef {Object} ExtendedWorkerOptions
      * @property {Boolean} [promise] - Whether to return a Promise from ExtendedWorker.postMessage
      * @property {String|String[]} [importScripts] - Third-party Scripts to import into the Worker
-     * @property {Boolean} [includeHandler] - Whether to include the default ExtendedWorkerHandler in the worker
+     * @property {Boolean} [includeHandler] - Whether to include the default PromiseHandler in the worker
      * @property {String|String[]} [localImports] - Local Scripts to import into the Worker
      * @property {Boolean} [uglify] - Wrap your function in importScripts
      * @property {"include"|"omit"|"same-origin"} [credentials] - Whether to send credentials with requests
@@ -103,7 +109,7 @@ export class ExtendedWorker {
      */
 
     /**
-     * @typedef {Object} ExtendedWorkerPromiseManager
+     * @typedef {Object} ExtendedWorkerPromiseHandler
      * @property {Object.<string,Function>} resolves
      * @property {Object.<string,Function>} rejects
      * @property {number} instances
@@ -117,44 +123,60 @@ export class ExtendedWorker {
      * @typedef {[any,Transferable[]?]} WorkerMessagePayload
      */
 
-    static {
-        this.resolves = {};
-        this.rejects = {};
-        this.instances = 0;
+    /**
+     * @returns {globalThis}
+     */
+    static get globalThis() {
+        return globalThis || self || window;
     }
 
     /**
+     * @returns {{[number]:ExtendedWorker,length:number}}
+     */
+    static get global() {
+        if ( 'ExtendedWorkers' in this.globalThis ) {
+            return this.globalThis.ExtendedWorkers;
+        }
+        return ( this.globalThis.ExtendedWorkers = Object.assign( Object.create( null ), { length: 0 } ) );
+    }
+
+    /**
+     * @param {ExtendedWorker} worker
      * @returns {number}
      */
-    static get id() {
-        return ExtendedWorker.instances++;
+    static add( worker ) {
+        const workers = ExtendedWorker.global;
+        const id = workers.length++;
+        workers[id] = worker;
+        return id;
     }
 
     /**
-     * Post Message to Worker within an ExtendedWorker
-     * @param {WorkerMessagePayload} messagePayload - Message Payload to pass through Worker.postMessage
-     * @param {ExtendedWorker} worker - Worker to which post messagePayload
-     * @returns {void|Promise}
+     * @param {number} id
+     * @returns {ExtendedWorker}
      */
-    static postMessage( messagePayload, extendedWorker ) {
-        const { worker, promise, id, usages } = extendedWorker;
-        if ( promise ) {
-            const messageId = `${ id }::${ usages }`;
-            const [ message, transfer ] = messagePayload;
-            const payload = { id: messageId, data: message };
-            return new Promise( ( resolve, reject ) => {
-                ExtendedWorker.resolves[messageId] = resolve;
-                ExtendedWorker.rejects[messageId] = reject;
-                if ( transfer ) {
-                    worker.postMessage( payload, transfer );
-                }
-                else {
-                    worker.postMessage( payload );
-                }
-            } );
-        }
-        worker.postMessage( ...messagePayload );
+    static get( id ) {
+        return ExtendedWorker.global[id];
+    }
 
+    /**
+     * @param {number} id
+     * @returns {void}
+     */
+    static delete( id ) {
+        ExtendedWorker.global[id] = null;
+    }
+
+    /**
+     * @returns {void}
+     */
+    static terminateAll() {
+        const workers = ExtendedWorker.global;
+        for ( const id in workers ) {
+            if ( workers[id] ) {
+                workers[id].terminate();
+            }
+        }
     }
 
     /**
@@ -163,9 +185,10 @@ export class ExtendedWorker {
      * @returns {void}
      */
     static onMessage( message ) {
-        const { id, err, data } = message.data;
-        const resolve = ExtendedWorker.resolves[id];
-        const reject = ExtendedWorker.rejects[id];
+        const { id: { workerId, messageId }, err, data } = message.data;
+        const worker = ExtendedWorker.get( workerId );
+        const resolve = worker.resolves[messageId];
+        const reject = worker.rejects[messageId];
         if ( !err ) {
             if ( resolve ) {
                 resolve( data );
@@ -176,47 +199,35 @@ export class ExtendedWorker {
                 reject( err );
             }
         }
-        ExtendedWorker.delete( id );
+        worker.delete( messageId );
     }
 
     /**
-     * @param {string} id - Unique messageId
-     * @returns {void}
-     */
-    static delete( id ) {
-        delete ExtendedWorker.resolves[id];
-        delete ExtendedWorker.rejects[id];
-    }
-
-    /**
-     * @returns {ExtendedWorkerHandler}
+     * @returns {PromiseHandler}
      */
     static get Handler() {
-        return ExtendedWorkerHandler;
+        return PromiseHandler;
     }
 
     /**
      * @returns {string}
      */
-    static get WrappedHandler() {
-        return `()=>(globalThis||self||window).listeners=new (${ ExtendedWorker.Handler.toString() })();`;
+    static get scriptHandler() {
+        return `()=>(globalThis||self||window).listeners=new (${ PromiseHandler.toString() })();`;
     }
 
     /**
-     * Encapsulate a function in a blob to be used as Worker code
-     *
-     * @param {string} data - Data to be sent to the Worker
      * @returns {string}
      */
-    static toObjectURL( data ) {
-        return URL.createObjectURL( new Blob( [ data ], { type: 'application/javascript' } ) );
+    static get moduleHandler() {
+        return `(globalThis||self||window)._=(new (${ PromiseHandler.toString() })()).proxy;`;
     }
 
     /**
-     * @param {ExtendedWorkerOptions} WorkerOptions
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {string[]}
      */
-    static _parseLocalScriptsImports( WorkerOptions = {} ) {
+    static importLocalScripts( WorkerOptions = {} ) {
         const scripts = [];
         if ( 'localImports' in WorkerOptions ) {
             const { localImports: imports } = WorkerOptions;
@@ -234,9 +245,10 @@ export class ExtendedWorker {
     }
 
     /**
-     * @param {ExtendedWorkerOptions} WorkerOptions
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
+     * @returns {string[]}
      */
-    static _parseImportScripts( WorkerOptions = {} ) {
+    static importScripts( WorkerOptions = {} ) {
         const scripts = [];
         if ( 'importScripts' in WorkerOptions ) {
             const { importScripts: imports } = WorkerOptions;
@@ -254,9 +266,10 @@ export class ExtendedWorker {
     }
 
     /**
-     * @param {ExtendedWorkerOptions} WorkerOptions
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
+     * @returns {string[]}
      */
-    static _parseLocalModuleImports( WorkerOptions = {} ) {
+    static importModuleLocalScripts( WorkerOptions = {} ) {
         const modules = [];
         if ( 'localImports' in WorkerOptions ) {
             const { localImports: imports } = WorkerOptions;
@@ -307,15 +320,16 @@ export class ExtendedWorker {
             }
         }
         if ( 'includeHandler' in WorkerOptions && WorkerOptions.includeHandler === true ) {
-            modules.push( `import multithread from '${ window.location.origin }/src/multithread.js';` );
+            modules.push( ExtendedWorker.moduleHandler );
         }
         return modules;
     }
 
     /**
-     * @param {ExtendedWorkerOptions} WorkerOptions
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
+     * @returns {string[]}
      */
-    static _parseImportModuleScripts( WorkerOptions = {} ) {
+    static importModuleScripts( WorkerOptions = {} ) {
         const modules = [];
         if ( 'importScripts' in WorkerOptions ) {
             const { importScripts: imports } = WorkerOptions;
@@ -368,14 +382,18 @@ export class ExtendedWorker {
         return modules;
     }
 
-    static _exportHandlerToScriptImport() {
-        return ExtendedWorker.toObjectURL( `(${ ExtendedWorker.WrappedHandler })();` );
+    /**
+     * @returns {string}
+     */
+    static getHandlerAsURL() {
+        return ExtendedWorker.toObjectURL( `(${ ExtendedWorker.scriptHandler })();` );
     }
 
     /**
      * @param {string} WorkerString
+     * @returns {string}
      */
-    static _uglifyWorkerToScript( WorkerString ) {
+    static uglifyScriptWorker( WorkerString ) {
         if ( typeof WorkerString === 'string' ) {
             return ExtendedWorker.toObjectURL( WorkerString );
         }
@@ -384,16 +402,16 @@ export class ExtendedWorker {
 
     /**
      * @param {string} WorkerString
-     * @param {ExtendedWorkerOptions} WorkerOptions
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {string}
      */
-    static _craftScriptForModuleImport( WorkerString, WorkerOptions = {} ) {
+    static prepareForModuleImport( WorkerString, WorkerOptions = {} ) {
         if ( typeof WorkerString !== 'string' ) {
             throw new Error( 'WorkerString is not a string.' );
         }
         const modules = [
-            ...ExtendedWorker._parseLocalModuleImports( WorkerOptions ),
-            ...ExtendedWorker._parseImportModuleScripts( WorkerOptions )
+            ...ExtendedWorker.importModuleLocalScripts( WorkerOptions ),
+            ...ExtendedWorker.importModuleScripts( WorkerOptions )
         ];
         let WorkerBody;
         if ( 'uglify' in WorkerOptions && WorkerOptions.uglify === true ) {
@@ -407,23 +425,23 @@ export class ExtendedWorker {
 
     /**
      * @param {string} WorkerString
-     * @param {ExtendedWorkerOptions} WorkerOptions
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {string}
      */
-    static _craftScriptForScriptImport( WorkerString, WorkerOptions = {} ) {
+    static prepareForScriptImport( WorkerString, WorkerOptions = {} ) {
         if ( typeof WorkerString !== 'string' ) {
             throw new Error( 'WorkerString is not a string.' );
         }
         const scripts = [
-            ...ExtendedWorker._parseLocalScriptsImports( WorkerOptions ),
-            ...ExtendedWorker._parseImportScripts( WorkerOptions )
+            ...ExtendedWorker.importLocalScripts( WorkerOptions ),
+            ...ExtendedWorker.importScripts( WorkerOptions )
         ];
         if ( 'includeHandler' in WorkerOptions && WorkerOptions.includeHandler === true ) {
-            scripts.push( ExtendedWorker._exportHandlerToScriptImport() );
+            scripts.push( ExtendedWorker.getHandlerAsURL() );
         }
         let WorkerBody;
         if ( 'uglify' in WorkerOptions && WorkerOptions.uglify === true ) {
-            scripts.push( ExtendedWorker._uglifyWorkerToScript( WorkerString ) );
+            scripts.push( ExtendedWorker.uglifyScriptWorker( WorkerString ) );
             WorkerBody = `importScripts("${ scripts.join( '","' ) }");`;
         }
         else {
@@ -434,20 +452,30 @@ export class ExtendedWorker {
     }
 
     /**
-     * @param {string} WorkerString
-     * @param {ExtendedWorkerOptions} WorkerOptions
+     * Encapsulate a function in a blob to be used as Worker code
+     *
+     * @param {string} data - Data to be sent to the Worker
      * @returns {string}
      */
-    static createObjectURL( WorkerString = '', WorkerOptions = {} ) {
+    static toObjectURL( data ) {
+        return URL.createObjectURL( new Blob( [ data ], { type: 'application/javascript' } ) );
+    }
+
+    /**
+     * @param {string} WorkerString
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
+     * @returns {string}
+     */
+    static createObjectURL( WorkerString, WorkerOptions = {} ) {
         if ( typeof WorkerOptions === 'object' ) {
             if ( 'type' in WorkerOptions && WorkerOptions.type === 'module' ) {
-                return ExtendedWorker._craftScriptForModuleImport( WorkerString, WorkerOptions );
+                return ExtendedWorker.prepareForModuleImport( WorkerString, WorkerOptions );
             }
             else if ( 'type' in WorkerOptions && !( WorkerOptions.type === 'module' || WorkerOptions.type === 'classic' ) ) {
                 throw new Error( `WorkerOptions.type:${ WorkerOptions.type } is not a valid type.` );
             }
             else {
-                return ExtendedWorker._craftScriptForScriptImport( WorkerString, WorkerOptions );
+                return ExtendedWorker.prepareForScriptImport( WorkerString, WorkerOptions );
             }
         }
         else if ( typeof WorkerString === 'string' ) {
@@ -462,7 +490,7 @@ export class ExtendedWorker {
      * The proxied ExtendedWorker is by default a module worker set to receive promise-based messages and managed through an builtin handler
      *
      * @param {string|Function} WorkerObject
-     * @param {ExtendedWorkerOptions} WorkerOptions
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {ExtendedWorkerProxy}
      */
     static new( WorkerObject, WorkerOptions = {} ) {
@@ -473,7 +501,8 @@ export class ExtendedWorker {
      * Run a single function in a worker and terminate the worker once the function has been executed
      *
      * @param {string|Function} func
-     * @param {...any} args
+     * @param {any} [data]
+     * @param {Transferable[]} [transferable]
      */
     static async run( func, data, transferable ) {
         const worker = ExtendedWorker.new( `async()=>_.run(${ func })` );
@@ -484,7 +513,7 @@ export class ExtendedWorker {
 
     /**
      * @param {string|Function} WorkerObject
-     * @param {ExtendedWorkerOptions} WorkerOptions
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
      */
     constructor( WorkerObject, WorkerOptions ) {
         let _workerObject;
@@ -497,20 +526,68 @@ export class ExtendedWorker {
         else {
             throw new Error( 'WorkerObject is not a string or a function.' );
         }
-        Object.defineProperty( this, 'worker', { value: new Worker( _workerObject, WorkerOptions ) } );
-        Object.defineProperty( this, 'promise', { value: WorkerOptions && WorkerOptions.promise } );
-        this._usages = 0;
+        const workerId = ExtendedWorker.add( this );
+        Object.defineProperty( this, 'internals', {
+            value: Object.preventExtensions(
+                Object.assign(
+                    Object.create( null ),
+                    {
+                        workerId,
+                        name: ( WorkerOptions ? WorkerOptions.name : undefined ) || workerId,
+                        worker: new Worker( _workerObject, WorkerOptions ),
+                        promise: WorkerOptions && WorkerOptions.promise,
+                        resolves: Object.create( null ),
+                        rejects: Object.create( null ),
+                        requests: 0
+                    }
+                )
+            )
+        } );
         if ( WorkerOptions && 'promise' in WorkerOptions && WorkerOptions.promise === true ) {
-            Object.defineProperty( this, 'id', { value: ExtendedWorker.id } );
             this.worker.onmessage = ExtendedWorker.onMessage;
         }
     }
 
     /**
+     * @returns {Worker}
+     */
+    get worker() {
+        return this.internals.worker;
+    }
+
+    /**
      * @returns {number}
      */
-    get usages() {
-        return this._usages++;
+    get workerId() {
+        return this.internals.workerId;
+    }
+
+    /**
+     * @returns {boolean}
+     */
+    get promise() {
+        return this.internals.promise;
+    }
+
+    /**
+     * @returns {Object.<number,Promise<any>>}
+     */
+    get resolves() {
+        return this.internals.resolves;
+    }
+
+    /**
+     * @returns {Object.<number,Promise<any>>}
+     */
+    get rejects() {
+        return this.internals.rejects;
+    }
+
+    /**
+     * @returns {number}
+     */
+    get requests() {
+        return this.internals.requests++;
     }
 
     /**
@@ -552,6 +629,15 @@ export class ExtendedWorker {
     }
 
     /**
+     * @param {string} id - Unique messageId
+     * @returns {void}
+     */
+    delete( id ) {
+        delete this.resolves[id];
+        delete this.rejects[id];
+    }
+
+    /**
      * @param {Event} event
      * @returns {Boolean}
      */
@@ -562,7 +648,7 @@ export class ExtendedWorker {
     /**
      * Add event listener in target's event listener list
      * @param {any} type
-     * @param {(ev:any).any} listener
+     * @param {MessageHandler} listener
      * @param {boolean|AddEventListenerOptions} [options]
      */
     addEventListener( type, listener, options ) {
@@ -572,7 +658,7 @@ export class ExtendedWorker {
     /**
      * Removes the event listener in target's event listener list with the same type, callback, and options.
      * @param {any} type
-     * @param {(ev:any).any} listener
+     * @param {MessageHandler} listener
      * @param {boolean|EventListenerOptions} [options]
      */
     removeEventListener( type, listener, options ) {
@@ -581,6 +667,7 @@ export class ExtendedWorker {
 
     terminate() {
         this.worker.terminate();
+        ExtendedWorker.delete( this.workerId );
     }
 
     /**
@@ -590,7 +677,31 @@ export class ExtendedWorker {
      * @returns {void|Promise}
      */
     postMessage( message, transfer ) {
-        return ExtendedWorker.postMessage( [ message, transfer ], this );
+        const {
+            worker,
+            workerId,
+            promise,
+            requests
+        } = this;
+        if ( promise ) {
+            const messageId = requests;
+            const payloadId = Object.assign( Object.create( null ), {
+                workerId,
+                messageId
+            } );
+            const payload = { id: payloadId, data: message };
+            return new Promise( ( resolve, reject ) => {
+                this.resolves[messageId] = resolve;
+                this.rejects[messageId] = reject;
+                if ( transfer ) {
+                    worker.postMessage( payload, transfer );
+                }
+                else {
+                    worker.postMessage( payload );
+                }
+            } );
+        }
+        worker.postMessage( message, transfer );
     }
 
 }
@@ -603,24 +714,90 @@ export class Cluster {
      */
 
     /**
-     * @typedef {Object} ClusterExecutionMode
+     * @typedef {Object} ClusterModeOptions
      * @property {boolean} race
      * @property {boolean} spread
      */
 
     /**
      * @typedef {Object} ClusterMessageOptions
-     * @property {ClusterExecutionMode} [mode]
-     * @property {any} data
-     * @property {Transferable[]} transferable
+     * @property {any} [data]
+     * @property {Transferable[]} [transferable]
+     * @property {ClusterModeOptions} [modes]
      */
 
     /**
      * @typedef {Cluster & Proxy} ClusterProxy
      */
 
-    static {
-        this.DEFAULT_SIZE = 4;
+    static get globalThis() {
+        return globalThis || self || window;
+    }
+
+    static get global() {
+        if ( 'Clusters' in this.globalThis ) {
+            return this.globalThis.Clusters;
+        }
+        return ( this.globalThis.Clusters = Object.assign( Object.create( null ), {
+            length: 0,
+            internals: Object.preventExtensions( Object.assign( Object.create( null ), { DEFAULT_SIZE: 4 } ) )
+        } ) );
+    }
+
+    /**
+     * @param {number} size - Number of Workers to spawn
+     */
+    static set DEFAULT_SIZE( size ) {
+        this.global.internals.DEFAULT_SIZE = size;
+    }
+
+    /**
+     * @returns {number}
+     */
+    static get DEFAULT_SIZE() {
+        return this.global.internals.DEFAULT_SIZE;
+    }
+
+    /**
+     * @param {Cluster} cluster
+     * @returns {number}
+     */
+    static add( cluster ) {
+        const clusters = Cluster.global;
+        const id = clusters.length++;
+        clusters[id] = cluster;
+        return id;
+    }
+
+    /**
+     * @param {number} id
+     * @returns {Cluster}
+     */
+    static get( id ) {
+        const clusters = Cluster.global;
+        return clusters[id];
+    }
+
+    /**
+     * @param {number} id
+     * @returns {void}
+     */
+    static delete( id ) {
+        const clusters = Cluster.global;
+        if ( clusters[id] ) {
+            clusters[id] = null;
+        }
+    }
+
+    /**
+     * @returns {void}
+     */
+    static terminateAll() {
+        const clusters = Cluster.global;
+        // eslint-disable-next-line guard-for-in
+        for ( const id in clusters ) {
+            clusters[id].terminate();
+        }
     }
 
     /**
@@ -629,7 +806,7 @@ export class Cluster {
      * The proxied Cluster is by default a group of 4 module workers set to receive promise-based messages and managed through the builtin handler
      *
      * @param {string|Function} WorkerObject
-     * @param {ExtendedWorkerOptions & ClusterOptions} ClusterOptions
+     * @param {ExtendedWorkerOptions & ClusterOptions} [ClusterOptions]
      * @returns {ClusterProxy}
      */
     static new( WorkerObject, ClusterOptions = { size: Cluster.DEFAULT_SIZE } ) {
@@ -638,8 +815,8 @@ export class Cluster {
 
     /**
      * @param {Function} func
-     * @param {any} data
-     * @param {Transferable[]} transferable
+     * @param {any} [data]
+     * @param {Transferable[]} [transferable]
      */
     static async run( func, data, transferable ) {
         const cluster = Cluster.new( `async()=>_.run(${ func })`, { size: Cluster.DEFAULT_SIZE } );
@@ -650,8 +827,8 @@ export class Cluster {
 
     /**
      * @param {Function} func
-     * @param {any} data
-     * @param {Transferable[]} transferable
+     * @param {any} [data]
+     * @param {Transferable[]} [transferable]
      */
     static async $run( func, data, transferable ) {
         const cluster = Cluster.new( `async()=>_.run(${ func })`, { size: Cluster.DEFAULT_SIZE } );
@@ -660,6 +837,11 @@ export class Cluster {
         return result;
     }
 
+    /**
+     * @param {Function} func
+     * @param {any} [data]
+     * @param {Transferable[]} [transferable]
+     */
     static async _run( func, data, transferable ) {
         const cluster = Cluster.new( `async()=>_.run(${ func })`, { size: Cluster.DEFAULT_SIZE } );
         const result = await cluster._run( data, transferable );
@@ -669,8 +851,8 @@ export class Cluster {
 
     /**
      * @param {Function} func
-     * @param {any} data
-     * @param {Transferable[]} transferable
+     * @param {any} [data]
+     * @param {Transferable[]} [transferable]
      */
     // eslint-disable-next-line camelcase
     static async $_run( func, data, transferable ) {
@@ -700,14 +882,22 @@ export class Cluster {
      * Cluster of ExtendedWorker
      *
      * @param {string|Function} WorkerObject
-     * @param {ExtendedWorkerOptions & ClusterOptions} ClusterOptions
+     * @param {ExtendedWorkerOptions & ClusterOptions} [ClusterOptions]
      */
     constructor( WorkerObject, ClusterOptions ) {
-        this.workers = [];
-        this.size = Cluster.DEFAULT_SIZE;
-        if ( typeof ClusterOptions === 'object' && 'size' in ClusterOptions ) {
-            this.size = +ClusterOptions.size;
-        }
+        const clusterId = Cluster.add( this );
+        Object.defineProperty( this, 'internals', {
+            value: Object.preventExtensions(
+                Object.assign(
+                    Object.create( null ),
+                    {
+                        workers: [],
+                        clusterId,
+                        size: ClusterOptions ? ClusterOptions.size : Cluster.DEFAULT_SIZE
+                    }
+                )
+            )
+        } );
         for ( let i = 0; i < this.size; i++ ) {
             this.workers.push( new ExtendedWorker( WorkerObject, ClusterOptions ) );
         }
@@ -729,6 +919,27 @@ export class Cluster {
     }
 
     /**
+     * @returns {ExtendedWorker[]}
+     */
+    get workers() {
+        return this.internals.workers;
+    }
+
+    /**
+     * @returns {number}
+     */
+    get clusterId() {
+        return this.internals.clusterId;
+    }
+
+    /**
+     * @returns {number}
+     */
+    get size() {
+        return this.internals.size;
+    }
+
+    /**
      * @param {Event} event
      * @returns {Boolean[]}
      */
@@ -739,7 +950,7 @@ export class Cluster {
     /**
      * Add event listener in target's event listener list
      * @param {any} type
-     * @param {(ev:any).any} listener
+     * @param {MessageHandler} listener
      * @param {boolean|AddEventListenerOptions} [options]
      */
     addEventListener( type, listener, options ) {
@@ -749,7 +960,7 @@ export class Cluster {
     /**
      * Removes the event listener in target's event listener list with the same type, callback, and options.
      * @param {any} type
-     * @param {(ev:any).any} listener
+     * @param {MessageHandler} listener
      * @param {boolean|EventListenerOptions} [options]
      */
     removeEventListener( type, listener, options ) {
@@ -760,7 +971,7 @@ export class Cluster {
      * Post message to Workers
      * @param {any} message - Message to pass to Workers
      * @param {Transferable[]} [transfer] - Transferable Object List to pass to Worker
-     * @param {Transferable[]} [transfer] - Transferable Object List to pass to Worker
+     * @param {ClusterMessageOptions} [options] - Advanced Options for `postMessage function
      * @returns {Promise}
      */
     postMessage( message, transfer, { modes: { race, spread } = {}, data, transferable } = {} ) {
@@ -781,15 +992,13 @@ export class Cluster {
 
     terminate() {
         this.workers.forEach( worker => worker.terminate() );
+        Cluster.delete( this.clusterId );
     }
 
 }
 
-export const Handler = isWorker() ? new ExtendedWorkerHandler() : undefined;
-
 export default {
     ExtendedWorker,
-    ExtendedWorkerHandler,
-    Cluster,
-    Handler
+    PromiseHandler,
+    Cluster
 };

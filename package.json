@@ -4,7 +4,7 @@
       "clean": "rm -rf dist",
       "clean-bundle": "mkdir -p ./dist/bundle && rm -rf dist/bundle/*",
       "clean-module": "mkdir -p ./dist/module && rm -rf dist/module/*",
-      "build-bundle": "npm run clean-bundle && rollup aemi.module.js --file dist/bundle/aemi.min.js --format iife --name aemi && terser dist/bundle/aemi.min.js -o dist/bundle/aemi.min.js -c toplevel -m toplevel --ecma 2021",
+      "build-bundle": "npm run clean-bundle && rollup aemi.module.js --file dist/bundle/aemi.min.js --format iife --name aemi && terser dist/bundle/aemi.min.js -o dist/bundle/aemi.min.js -c toplevel -m toplevel --ecma 2022",
       "build-module": "npm run clean-module && terser aemi.module.js -o dist/module/aemi.min.js -c toplevel -m toplevel --ecma 2022 && cp -r ./src ./dist/module/src && for script in ./dist/module/src/*.js; do terser $script -o $script -c toplevel -m toplevel --ecma 2022; done",
       "build": "npm run build-bundle && npm run build-module"
   },

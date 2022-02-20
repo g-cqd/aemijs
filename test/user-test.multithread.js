@@ -4,15 +4,13 @@
 
 
 
-import { Cluster, ExtendedWorker } from '../src/multithread.js';
+import { Cluster, ExtendedWorker } from '../dist/module/src/multithread.js';
 
 /* Worker Test */ ( async () => {
 
-    const worker = ExtendedWorker.new( async () => {
-        _.compute( arg => arg * 10 );
-    } );
+    const worker = ExtendedWorker.new( () => _.run( arg => arg * 10 ) );
 
-    console.log( await worker.compute( 10 ) );
+    console.log( await worker.run( 10 ) );
 
 } )();
 
@@ -21,9 +19,7 @@ import { Cluster, ExtendedWorker } from '../src/multithread.js';
 
     console.log( Cluster.DEFAULT_SIZE );
 
-    const cluster = Cluster.new( () => {
-        _.run( arg => arg * 10 );
-    } );
+    const cluster = Cluster.new( () => _.run( arg => arg * 10 ) );
 
     console.log( await cluster.run( 8 ) );                      // Await for all the result of the computation of the same argument.
     console.log( await cluster.$run( 8 ) );                     // Await for the first result of the computation of the same argument.
