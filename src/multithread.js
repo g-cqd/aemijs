@@ -1,11 +1,7 @@
 /* eslint-env node */
 'use strict';
 
-const { Worker, isMainThread } = require( 'worker_threads' );
-
-function _isMainThread() {
-    return 'isMainThread' in globalThis && globalThis.isMainThread || ( typeof isMainThread !== 'undefined' || isMainThread );
-}
+const { Worker } = require( 'worker_threads' );
 
 class Multithread {
 
@@ -161,11 +157,8 @@ class PromiseHandler {
     /**
      * @returns {Proxy}
      */
-    constructor( ) {
-        if ( !_isMainThread() ) {
-            return ( globalThis._ = new Proxy( new PromiseHandler.#class(), PromiseHandler.#proxyHandler ) );
-        }
-        throw new Error( 'This has to be run in a worker thread.' );
+    constructor() {
+        return ( globalThis._ = new Proxy( new PromiseHandler.#class(), PromiseHandler.#proxyHandler ) );
     }
 
 }
@@ -178,7 +171,7 @@ class ExtendedWorkerProxy {
             if ( property in target ) {
                 return target[property];
             }
-            return ( data, transferable ) => target.postMessage( { type: property, data }, transferable );
+            return ( data, transferable ) => target.sendMessage( { type: property, data }, transferable );
         }
     };
 
@@ -220,7 +213,7 @@ class ExtendedClusterProxy {
                 return target[property];
             }
             const { modes, property: propertyName } = ExtendedClusterProxy.parsePropertyDecorator( property );
-            return ( data, transferable ) => target.postMessage( { type: propertyName }, undefined, { modes, data, transferable } );
+            return ( data, transferable ) => target.sendMessage( { type: propertyName }, undefined, { modes, data, transferable } );
         }
     };
 
@@ -253,17 +246,19 @@ class ExtendedWorker extends Worker {
         return result;
     }
 
-    #core = {
-        resolves: Object.create( null ),
-        rejects: Object.create( null )
-    };
+    #core;
 
-    #requests = 0;
+    #requests;
 
     constructor( WorkerObject, WorkerOptions ) {
         const _workerObject = Multithread.getWorkerSource( WorkerObject );
         const _workerOptions = Multithread.getWorkerOptions( WorkerOptions );
         super( _workerObject, _workerOptions );
+        this.#core = {
+            resolves: Object.create( null ),
+            rejects: Object.create( null )
+        };
+        this.#requests = 0;
         const messageHandler = message => {
             const { id, err, data } = message;
             const resolve = this.#core.resolves[id];
@@ -282,7 +277,11 @@ class ExtendedWorker extends Worker {
         Object.freeze( this.#core );
     }
 
-    postMessage( message, transfer ) {
+    sendMessage( message, transfer ) {
+        return this.#postMessage( message, transfer );
+    }
+
+    #postMessage( message, transfer ) {
         const id = this.#requests++;
         const payload = Object.assign( Object.create( null ), { id, data: message, timestamp: Date.now() } );
         return new Promise( ( resolve, reject ) => {
@@ -295,6 +294,10 @@ class ExtendedWorker extends Worker {
                 super.postMessage( payload );
             }
         } );
+    }
+
+    postMessage( message, transfer ) {
+        return this.#postMessage( message, transfer );
     }
 
 }
@@ -505,8 +508,6 @@ class FunctionCluster extends ExtendedClusterProxy {
 
 }
 
-const Handler = _isMainThread() ? undefined : new PromiseHandler();
-
 module.exports = {
     ExtendedCluster,
     ExtendedClusterProxy,
@@ -514,6 +515,5 @@ module.exports = {
     ExtendedWorkerProxy,
     FunctionCluster,
     FunctionWorker,
-    PromiseHandler,
-    Handler
+    PromiseHandler
 };
