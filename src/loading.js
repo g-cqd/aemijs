@@ -1,4 +1,4 @@
-const { PromiseWorker } = require( './multithread.js' );
+const { ExtendedWorker } = require( './multithread.js' );
 
 class ImageLoader {
 

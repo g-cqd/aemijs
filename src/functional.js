@@ -32,9 +32,7 @@ class IArray {
             ) {
                 return Object.freeze( Object.setPrototypeOf( thisArg, IArray.prototype ) );
             }
-
             throw new TypeError( 'Please use IArray.from' );
-
         }
         else {
             return Object.freeze( thisArg );
@@ -74,7 +72,7 @@ class IArray {
 
     static isIArray( instance ) {
         return Object.getPrototypeOf( instance ) === IArray.prototype &&
-            'length' in instance &&
+            'length' in instance && typeof instance.length === 'number' &&
             ( !Object.isExtensible( instance ) || Object.isFrozen( instance ) );
     }
 
@@ -101,6 +99,9 @@ class IArray {
         }
         else {
             this.length = length;
+            for ( let i = 0; i < length; i += 1 ) {
+                this[i] = args[i];
+            }
             Object.freeze( this );
         }
     }
@@ -114,6 +115,20 @@ class IArray {
                 done: i++ >= length
             } )
         };
+    }
+
+    toString() {
+        const { length } = this;
+        if ( length === 0 ) {
+            return '';
+        }
+
+        let outputString = `${ this[0] }`;
+        for ( let i = 1; i < length; i += 1 ) {
+            outputString += `,${ this[i] }`;
+        }
+        return outputString;
+
     }
 
     /**
@@ -238,6 +253,11 @@ class IArray {
         }
     }
 
+    /**
+     * @param {any} valueToFind
+     * @param {Number} fromIndex
+     * @returns {Number}
+     */
     includes( valueToFind, fromIndex ) {
         for ( let { length } = this, i = fromIndex >= 0 && fromIndex < length ? fromIndex : 0; i < length; i += 1 ) {
             if ( Object.is( this[i], valueToFind ) ) {
@@ -247,6 +267,11 @@ class IArray {
         return false;
     }
 
+    /**
+     * @param {any} searchElement
+     * @param {Number} fromIndex
+     * @returns {Number}
+     */
     indexOf( searchElement, fromIndex ) {
         for ( let { length } = this, i = fromIndex >= 0 && fromIndex < length ? fromIndex : 0; i < length; i += 1 ) {
             if ( Object.is( this[i], searchElement ) ) {
@@ -256,6 +281,11 @@ class IArray {
         return -1;
     }
 
+    /**
+     * @param {any} searchElement
+     * @param {Number} fromIndex
+     * @returns {Number}
+     */
     lastIndexOf( searchElement, fromIndex ) {
         for ( let { length } = this, i = fromIndex >= 0 && fromIndex < length ? fromIndex : length; i > 0; i -= 1 ) {
             if ( Object.is( this[i], searchElement ) ) {
@@ -290,7 +320,7 @@ class IArray {
     filter( callback, thisArg ) {
         const _thisArg = thisArg || this;
         const { length } = _thisArg;
-        const Mutable = [];
+        const Mutable = new IArray( 0 );
         for ( let i = 0; i < length; i += 1 ) {
             if ( callback( _thisArg[i], i, _thisArg ) ) {
                 Mutable.push( _thisArg[i] );
@@ -348,7 +378,7 @@ class IArray {
         for ( let i = 1; i <= length; i += 1 ) {
             Mutable[i - 1] = this[length - i];
         }
-        return Object.freeze( Mutable );
+        return IArray.toImmutable( Mutable );
     }
 
     slice( start, end ) {
@@ -361,7 +391,7 @@ class IArray {
         for ( let i = _start; i < _end; i += 1 ) {
             Mutable[_i++] = this[i];
         }
-        return Object.freeze( Mutable );
+        return IArray.toImmutable( Mutable );
     }
 
     splice( start, deleteCount, ...items ) {
@@ -483,13 +513,13 @@ class IArray {
         const { length } = this;
         let string = '';
         for ( let i = 0; i < length; i += 1 ) {
-            string = `${ string }${ separator }${ this[i] }`;
+            string += `${ separator }${ this[i] }`;
         }
         return string;
     }
 
     sort( callback ) {
-        callback = callback || ( ( a, b ) => a < b ? -1 : a > b ? 1 : 0 );
+        const _callback = callback || ( ( a, b ) => a < b );
         const { length } = this;
         if ( length <= 1 ) {
             return IArray.from( this );
@@ -506,7 +536,7 @@ class IArray {
             let leftIndex = 0;
             let rightIndex = 0;
             while ( leftIndex < ll && rightIndex < rl ) {
-                if ( callback( left[leftIndex], right[rightIndex] ) < 0 ) {
+                if ( callback( left[leftIndex], right[rightIndex] ) ) {
                     Mutable[globalIndex++] = left[leftIndex++];
                 }
                 else {
@@ -524,7 +554,6 @@ class IArray {
             return IArray.toImmutable( Mutable );
         }
         return merge( left.sort( callback ), right.sort( callback ) );
-
     }
 
     reshape( ...args ) {
