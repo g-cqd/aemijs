@@ -1,7 +1,7 @@
 /* eslint-disable no-multi-spaces */
 /* eslint-disable line-comment-position */
 /* eslint-disable no-inline-comments */
-const { Batch, ExtendedWorker } = require( '../src/multithread' );
+const { ExtendedCluster, ExtendedWorker } = require( '../src/multithread' );
 
 const _ = {};
 
@@ -16,7 +16,7 @@ const _ = {};
 
 /* Cluster Test */ ( async () => {
 
-    const batch = Batch.new( () => _.run( arg => arg * 10 ) );
+    const batch = ExtendedCluster.new( () => _.run( arg => arg * 10 ) );
 
     console.log( await batch.run( 8 ) );                  // Await for all the result of the computation of the same argument.
     console.log( await batch.$run( 8 ) );                 // Await for the first result of the computation of the same argument.

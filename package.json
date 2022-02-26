@@ -1,7 +1,7 @@
 {
     "scripts": {
         "test": "mocha --recursive",
-        "debug": "node multithread.test.js"
+        "debug": "node ./test/multithread.test.js"
     },
     "devDependencies": {
         "mocha": "latest"

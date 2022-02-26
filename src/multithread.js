@@ -3,6 +3,10 @@
 
 const { Worker, isMainThread } = require( 'worker_threads' );
 
+function _isMainThread() {
+    return 'isMainThread' in globalThis && globalThis.isMainThread || ( typeof isMainThread !== 'undefined' || isMainThread );
+}
+
 class Multithread {
 
     static getModuleWorkerSource( WorkerObject ) {
@@ -158,7 +162,7 @@ class PromiseHandler {
      * @returns {Proxy}
      */
     constructor( ) {
-        if ( !( 'isMainThread' in globalThis ) || typeof isMainThread === 'undefined' || !isMainThread ) {
+        if ( !_isMainThread() ) {
             return ( globalThis._ = new Proxy( new PromiseHandler.#class(), PromiseHandler.#proxyHandler ) );
         }
         throw new Error( 'This has to be run in a worker thread.' );
@@ -501,6 +505,8 @@ class FunctionCluster extends ExtendedClusterProxy {
 
 }
 
+const Handler = _isMainThread() ? undefined : new PromiseHandler();
+
 module.exports = {
     ExtendedCluster,
     ExtendedClusterProxy,
@@ -508,5 +514,6 @@ module.exports = {
     ExtendedWorkerProxy,
     FunctionCluster,
     FunctionWorker,
-    PromiseHandler
+    PromiseHandler,
+    Handler
 };
