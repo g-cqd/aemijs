@@ -1,6 +1,7 @@
 {
     "env": {
-        "browser": true
+        "browser": true,
+        "node": false
     },
     "parserOptions": {
         "ecmaVersion": 2022,
@@ -238,7 +239,7 @@
         ],
         "no-console": "off",
         "no-constant-condition": "error",
-        "no-constructor-return": "error",
+        "no-constructor-return": "warn",
         "no-continue": "off",
         "no-control-regex": "error",
         "no-debugger": "off",

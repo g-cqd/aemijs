@@ -1,7 +1,11 @@
 /* eslint-env module */
+'use strict';
 
-import { getLastPath, removeStartingSlash } from './utils.js';
-
+/**
+ * @typedef {Object} PromiseListenerOptions
+ * @property {boolean} keepEvent
+ * @property {string} accessor
+ */
 
 /**
  * @callback MessageHandler
@@ -9,218 +13,69 @@ import { getLastPath, removeStartingSlash } from './utils.js';
  * @returns {any}
  */
 
-export class PromiseHandler {
+/**
+ * @typedef {PromiseHandler & Proxy} PromiseHandlerProxy
+ */
 
-    /**
-     * @typedef {Object} PromiseListenerOptions
-     * @property {boolean} keepEvent
-     * @property {string} accessor
-     */
+/**
+ * @typedef {Object} ExtendedWorkerOptions
+ * @property {Boolean} [promise] - Whether to return a Promise from ExtendedWorker.postMessage
+ * @property {String|String[]} [importScripts] - Third-party Scripts to import into the Worker
+ * @property {Boolean} [includeHandler] - Whether to include the default PromiseHandler in the worker
+ * @property {String|String[]} [localImports] - Local Scripts to import into the Worker
+ * @property {Boolean} [uglify] - Wrap your function in importScripts
+ * @property {"include"|"omit"|"same-origin"} [credentials] - Whether to send credentials with requests
+ * @property {String} [name] - Name of the worker
+ * @property {"classic"|"module"} [type] - Type of the worker
+ */
 
-    /**
-     * @typedef {PromiseHandler & Proxy} PromiseHandlerProxy
-     */
+/**
+ * @typedef {Object} ExtendedWorkerPromiseHandler
+ * @property {Object.<string,Function>} resolves
+ * @property {Object.<string,Function>} rejects
+ * @property {number} instances
+ */
 
-    constructor() {
-        this.listeners = Object.create( null );
-        this.addListener( 'default', value => value );
-        this.worker.onmessage = message => this.listen( message );
-        this.worker._ = this.proxy;
-    }
+/**
+ * @typedef {ExtendedWorker & Proxy} ExtendedWorkerProxy
+ */
 
-    /**
-     * @returns {globalThis}
-     */
-    // eslint-disable-next-line class-methods-use-this
-    get worker() {
-        return globalThis || self || window;
-    }
+/**
+ * @typedef {Object} ClusterOptions
+ * @property {number} [size=4] - Number of Workers to spawn
+ */
 
-    /**
-     * @returns {PromiseHandlerProxy}
-     */
-    get proxy() {
-        return new Proxy( this, {
-            get: ( target, property ) => {
-                if ( property in target ) {
-                    return target[property];
-                }
-                return ( func, options ) => target.addListener( property, func, options || { accessor: 'data' } );
-            }
-        } );
-    }
+/**
+ * @typedef {Object} ClusterModeOptions
+ * @property {boolean} race
+ * @property {boolean} spread
+ */
 
-    /**
-     * @param {MessageEvent} messageEvent
-     * @returns {void}
-     */
-    listen( messageEvent ) {
-        const { id, data } = messageEvent.data;
-        if ( typeof data === 'object' && 'type' in data ) {
-            if ( data.type in this.listeners ) {
-                this.listeners[data.type]( id, data, messageEvent );
-            }
-            else {
-                this.listeners.default( id, data, messageEvent );
-            }
-        }
-        else {
-            this.listeners.default( id, data, messageEvent );
-        }
-    }
+/**
+ * @typedef {Object} ClusterMessageOptions
+ * @property {any} [data]
+ * @property {Transferable[]} [transferable]
+ * @property {ClusterModeOptions} [modes]
+ */
 
-    /**
-     * @param {String} type - Message Type to look for when receiving a message
-     * @param {Function} func - Message Handler to call
-     * @param {PromiseListenerOptions} [options] - Options used to parse message data
-     * @returns {void}
-     */
-    addListener( type, func, options = {} ) {
-        const { keepEvent, accessor } = options;
-        this.listeners[type] = ( id, data, messageEvent ) => {
-            const _data = accessor ? data[accessor] : data;
-            const _args = keepEvent ? [ messageEvent, _data ] : [ _data ];
-            const _value = func( ..._args );
-            if ( _value instanceof Promise ) {
-                _value.then( value => this.worker.postMessage( { id, data: value } ) );
-                _value.catch( console.error );
-            }
-            else {
-                this.worker.postMessage( { id, data: _value } );
-            }
-        };
-    }
+/**
+ * @typedef {Cluster & Proxy} ClusterProxy
+ */
 
-}
-
-
-export class ExtendedWorker {
-
-    /**
-     * @typedef {Object} ExtendedWorkerOptions
-     * @property {Boolean} [promise] - Whether to return a Promise from ExtendedWorker.postMessage
-     * @property {String|String[]} [importScripts] - Third-party Scripts to import into the Worker
-     * @property {Boolean} [includeHandler] - Whether to include the default PromiseHandler in the worker
-     * @property {String|String[]} [localImports] - Local Scripts to import into the Worker
-     * @property {Boolean} [uglify] - Wrap your function in importScripts
-     * @property {"include"|"omit"|"same-origin"} [credentials] - Whether to send credentials with requests
-     * @property {String} [name] - Name of the worker
-     * @property {"classic"|"module"} [type] - Type of the worker
-     */
-
-    /**
-     * @typedef {Object} ExtendedWorkerPromiseHandler
-     * @property {Object.<string,Function>} resolves
-     * @property {Object.<string,Function>} rejects
-     * @property {number} instances
-     */
-
-    /**
-     * @typedef {ExtendedWorker & Proxy} ExtendedWorkerProxy
-     */
-
-    /**
-     * @typedef {[any,Transferable[]?]} WorkerMessagePayload
-     */
-
-    /**
-     * @returns {globalThis}
-     */
-    static get globalThis() {
-        return globalThis || self || window;
-    }
-
-    /**
-     * @returns {{[number]:ExtendedWorker,length:number}}
-     */
-    static get global() {
-        if ( 'ExtendedWorkers' in this.globalThis ) {
-            return this.globalThis.ExtendedWorkers;
-        }
-        return ( this.globalThis.ExtendedWorkers = Object.assign( Object.create( null ), { length: 0 } ) );
-    }
-
-    /**
-     * @param {ExtendedWorker} worker
-     * @returns {number}
-     */
-    static add( worker ) {
-        const workers = ExtendedWorker.global;
-        const id = workers.length++;
-        workers[id] = worker;
-        return id;
-    }
-
-    /**
-     * @param {number} id
-     * @returns {ExtendedWorker}
-     */
-    static get( id ) {
-        return ExtendedWorker.global[id];
-    }
-
-    /**
-     * @param {number} id
-     * @returns {void}
-     */
-    static delete( id ) {
-        ExtendedWorker.global[id] = null;
-    }
-
-    /**
-     * @returns {void}
-     */
-    static terminateAll() {
-        const workers = ExtendedWorker.global;
-        for ( const id in workers ) {
-            if ( workers[id] ) {
-                workers[id].terminate();
-            }
-        }
-    }
-
-    /**
-     * ExtendedWorker Message Reception Handling
-     * @param {MessageEvent} message - Message received by a Worker
-     * @returns {void}
-     */
-    static onMessage( message ) {
-        const { id: { workerId, messageId }, err, data } = message.data;
-        const worker = ExtendedWorker.get( workerId );
-        const resolve = worker.resolves[messageId];
-        const reject = worker.rejects[messageId];
-        if ( !err ) {
-            if ( resolve ) {
-                resolve( data );
-            }
-        }
-        else if ( reject ) {
-            if ( err ) {
-                reject( err );
-            }
-        }
-        worker.delete( messageId );
-    }
-
-    /**
-     * @returns {PromiseHandler}
-     */
-    static get Handler() {
-        return PromiseHandler;
-    }
+class Multithread {
 
     /**
      * @returns {string}
      */
     static get scriptHandler() {
-        return `()=>(globalThis||self||window).listeners=new (${ PromiseHandler.toString() })();`;
+        return `()=>((globalThis||self||window)._=new (${ PromiseHandler.toString() })());`;
     }
 
     /**
      * @returns {string}
      */
     static get moduleHandler() {
-        return `(globalThis||self||window)._=(new (${ PromiseHandler.toString() })()).proxy;`;
+        return `(globalThis||self||window)._=new (${ PromiseHandler.toString() })();`;
     }
 
     /**
@@ -320,7 +175,7 @@ export class ExtendedWorker {
             }
         }
         if ( 'includeHandler' in WorkerOptions && WorkerOptions.includeHandler === true ) {
-            modules.push( ExtendedWorker.moduleHandler );
+            modules.push( Multithread.moduleHandler );
         }
         return modules;
     }
@@ -386,7 +241,7 @@ export class ExtendedWorker {
      * @returns {string}
      */
     static getHandlerAsURL() {
-        return ExtendedWorker.toObjectURL( `(${ ExtendedWorker.scriptHandler })();` );
+        return Multithread.toObjectURL( `(${ Multithread.scriptHandler })();` );
     }
 
     /**
@@ -395,32 +250,9 @@ export class ExtendedWorker {
      */
     static uglifyScriptWorker( WorkerString ) {
         if ( typeof WorkerString === 'string' ) {
-            return ExtendedWorker.toObjectURL( WorkerString );
+            return Multithread.toObjectURL( WorkerString );
         }
         throw new Error( 'WorkerString is not a string.' );
-    }
-
-    /**
-     * @param {string} WorkerString
-     * @param {ExtendedWorkerOptions} [WorkerOptions]
-     * @returns {string}
-     */
-    static prepareForModuleImport( WorkerString, WorkerOptions = {} ) {
-        if ( typeof WorkerString !== 'string' ) {
-            throw new Error( 'WorkerString is not a string.' );
-        }
-        const modules = [
-            ...ExtendedWorker.importModuleLocalScripts( WorkerOptions ),
-            ...ExtendedWorker.importModuleScripts( WorkerOptions )
-        ];
-        let WorkerBody;
-        if ( 'uglify' in WorkerOptions && WorkerOptions.uglify === true ) {
-            throw new Error( 'WorkerOptions.uglify can not be applied to module worker.' );
-        }
-        else {
-            WorkerBody = `${ modules.length > 0 ? `${ modules.join( '\n' ) }\n` : '' }(${ WorkerString })();`;
-        }
-        return ExtendedWorker.toObjectURL( WorkerBody );
     }
 
     /**
@@ -433,22 +265,44 @@ export class ExtendedWorker {
             throw new Error( 'WorkerString is not a string.' );
         }
         const scripts = [
-            ...ExtendedWorker.importLocalScripts( WorkerOptions ),
-            ...ExtendedWorker.importScripts( WorkerOptions )
+            ...Multithread.importLocalScripts( WorkerOptions ),
+            ...Multithread.importScripts( WorkerOptions )
         ];
         if ( 'includeHandler' in WorkerOptions && WorkerOptions.includeHandler === true ) {
-            scripts.push( ExtendedWorker.getHandlerAsURL() );
+            scripts.push( Multithread.getHandlerAsURL() );
         }
         let WorkerBody;
         if ( 'uglify' in WorkerOptions && WorkerOptions.uglify === true ) {
-            scripts.push( ExtendedWorker.uglifyScriptWorker( WorkerString ) );
+            scripts.push( Multithread.uglifyScriptWorker( WorkerString ) );
             WorkerBody = `importScripts("${ scripts.join( '","' ) }");`;
         }
         else {
             WorkerBody = `${ scripts.length > 0 ? `importScripts("${ scripts.join( '","' ) }");\n` : '' }(${ WorkerString })();`;
         }
-        return ExtendedWorker.toObjectURL( WorkerBody );
+        return Multithread.toObjectURL( WorkerBody );
+    }
 
+    /**
+     * @param {string} WorkerString
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
+     * @returns {string}
+     */
+    static prepareForModuleImport( WorkerString, WorkerOptions = {} ) {
+        if ( typeof WorkerString !== 'string' ) {
+            throw new Error( 'WorkerString is not a string.' );
+        }
+        const modules = [
+            ...Multithread.importModuleLocalScripts( WorkerOptions ),
+            ...Multithread.importModuleScripts( WorkerOptions )
+        ];
+        let WorkerBody;
+        if ( 'uglify' in WorkerOptions && WorkerOptions.uglify === true ) {
+            throw new Error( 'WorkerOptions.uglify can not be applied to module worker.' );
+        }
+        else {
+            WorkerBody = `${ modules.length > 0 ? `${ modules.join( '\n' ) }\n` : '' }(${ WorkerString })();`;
+        }
+        return Multithread.toObjectURL( WorkerBody );
     }
 
     /**
@@ -469,401 +323,158 @@ export class ExtendedWorker {
     static createObjectURL( WorkerString, WorkerOptions = {} ) {
         if ( typeof WorkerOptions === 'object' ) {
             if ( 'type' in WorkerOptions && WorkerOptions.type === 'module' ) {
-                return ExtendedWorker.prepareForModuleImport( WorkerString, WorkerOptions );
+                return Multithread.prepareForModuleImport( WorkerString, WorkerOptions );
             }
             else if ( 'type' in WorkerOptions && !( WorkerOptions.type === 'module' || WorkerOptions.type === 'classic' ) ) {
                 throw new Error( `WorkerOptions.type:${ WorkerOptions.type } is not a valid type.` );
             }
             else {
-                return ExtendedWorker.prepareForScriptImport( WorkerString, WorkerOptions );
+                return Multithread.prepareForScriptImport( WorkerString, WorkerOptions );
             }
         }
         else if ( typeof WorkerString === 'string' ) {
-            return ExtendedWorker.toObjectURL( WorkerString );
+            return Multithread.toObjectURL( WorkerString );
         }
         throw new Error( 'WorkerString is not a string.' );
     }
 
-    /**
-     * Return a proxied ExtendedWorker
-     *
-     * The proxied ExtendedWorker is by default a module worker set to receive promise-based messages and managed through an builtin handler
-     *
-     * @param {string|Function} WorkerObject
-     * @param {ExtendedWorkerOptions} [WorkerOptions]
-     * @returns {ExtendedWorkerProxy}
-     */
-    static new( WorkerObject, WorkerOptions = {} ) {
-        return new ExtendedWorker( WorkerObject, { promise: true, type: 'module', includeHandler: true, ...WorkerOptions } ).proxy;
-    }
+}
 
-    /**
-     * Run a single function in a worker and terminate the worker once the function has been executed
-     *
-     * @param {string|Function} func
-     * @param {any} [data]
-     * @param {Transferable[]} [transferable]
-     */
-    static async run( func, data, transferable ) {
-        const worker = ExtendedWorker.new( `async()=>_.run(${ func })` );
-        const result = await worker.run( data, transferable );
-        worker.terminate();
-        return result;
-    }
+/**
+ * Get last path element without path nor extension
+ *
+ * @param {string} path - Path to file
+ * @returns {string}
+ */
+function getLastPath( path ) {
+    return path
+        .split( /\//gu )
+        .pop()
+        .split( /\./gu )
+        .filter( str => str.length > 0 )
+        .shift();
+}
 
-    /**
-     * @param {string|Function} WorkerObject
-     * @param {ExtendedWorkerOptions} [WorkerOptions]
-     */
-    constructor( WorkerObject, WorkerOptions ) {
-        let _workerObject;
-        if ( typeof WorkerObject === 'function' ) {
-            _workerObject = ExtendedWorker.createObjectURL( WorkerObject.toString(), WorkerOptions );
+/**
+ * Remove starting slashes
+ *
+ * @param {string} path
+ * @returns {string}
+ */
+function removeStartingSlash( path ) {
+    return `${ path.replace( /^\/*/gu, '' ) }`;
+}
+
+export class PromiseHandler {
+
+    static #class = class {
+
+        #core = Object.assign( Object.create( null ), { listeners: Object.create( null ) } );
+
+        constructor() {
+            this.addListener( 'default', value => value );
+            globalThis.addEventListener( 'message', message => this.listen( message ) );
+            globalThis.addEventListener( 'messageerror', message => this.listen( message ) );
+            Object.freeze( this.#core );
         }
-        else if ( typeof WorkerObject === 'string' ) {
-            _workerObject = ExtendedWorker.createObjectURL( WorkerObject, WorkerOptions );
+
+        get listeners() {
+            return this.#core.listeners;
         }
-        else {
-            throw new Error( 'WorkerObject is not a string or a function.' );
-        }
-        const workerId = ExtendedWorker.add( this );
-        Object.defineProperty( this, 'internals', {
-            value: Object.preventExtensions(
-                Object.assign(
-                    Object.create( null ),
-                    {
-                        workerId,
-                        name: ( WorkerOptions ? WorkerOptions.name : undefined ) || workerId,
-                        worker: new Worker( _workerObject, WorkerOptions ),
-                        promise: WorkerOptions && WorkerOptions.promise,
-                        resolves: Object.create( null ),
-                        rejects: Object.create( null ),
-                        requests: 0
-                    }
-                )
-            )
-        } );
-        if ( WorkerOptions && 'promise' in WorkerOptions && WorkerOptions.promise === true ) {
-            this.worker.onmessage = ExtendedWorker.onMessage;
-        }
-    }
 
-    /**
-     * @returns {Worker}
-     */
-    get worker() {
-        return this.internals.worker;
-    }
-
-    /**
-     * @returns {number}
-     */
-    get workerId() {
-        return this.internals.workerId;
-    }
-
-    /**
-     * @returns {boolean}
-     */
-    get promise() {
-        return this.internals.promise;
-    }
-
-    /**
-     * @returns {Object.<number,Promise<any>>}
-     */
-    get resolves() {
-        return this.internals.resolves;
-    }
-
-    /**
-     * @returns {Object.<number,Promise<any>>}
-     */
-    get rejects() {
-        return this.internals.rejects;
-    }
-
-    /**
-     * @returns {number}
-     */
-    get requests() {
-        return this.internals.requests++;
-    }
-
-    /**
-     * @returns {ExtendedWorkerProxy}
-     */
-    get proxy() {
-        return new Proxy( this, {
-            get: ( target, property ) => {
-                if ( property in target ) {
-                    return target[property];
-                }
-                return ( data, transferable ) => target.postMessage( { type: property, data }, transferable );
-            }
-        } );
-    }
-
-    set onmessage( func ) {
-        this.worker.onmessage = func;
-    }
-
-    get onmessage() {
-        return this.worker.onmessage;
-    }
-
-    set onerror( func ) {
-        this.worker.onerror = func;
-    }
-
-    get onerror() {
-        return this.worker.onerror;
-    }
-
-    set onmessageerror( func ) {
-        this.worker.onmessageerror = func;
-    }
-
-    get onmessageerror() {
-        return this.worker.onmessageerror;
-    }
-
-    /**
-     * @param {string} id - Unique messageId
-     * @returns {void}
-     */
-    delete( id ) {
-        delete this.resolves[id];
-        delete this.rejects[id];
-    }
-
-    /**
-     * @param {Event} event
-     * @returns {Boolean}
-     */
-    dispatchEvent( event ) {
-        return this.worker.dispatchEvent( event );
-    }
-
-    /**
-     * Add event listener in target's event listener list
-     * @param {any} type
-     * @param {MessageHandler} listener
-     * @param {boolean|AddEventListenerOptions} [options]
-     */
-    addEventListener( type, listener, options ) {
-        return this.worker.addEventListener( type, listener, options );
-    }
-
-    /**
-     * Removes the event listener in target's event listener list with the same type, callback, and options.
-     * @param {any} type
-     * @param {MessageHandler} listener
-     * @param {boolean|EventListenerOptions} [options]
-     */
-    removeEventListener( type, listener, options ) {
-        this.worker.removeEventListener( type, listener, options );
-    }
-
-    terminate() {
-        this.worker.terminate();
-        ExtendedWorker.delete( this.workerId );
-    }
-
-    /**
-     * Post message to Worker
-     * @param {any} message - Message to pass to Worker
-     * @param {Transferable[]} [transfer] - Transferable Object List to pass to Worker
-     * @returns {void|Promise}
-     */
-    postMessage( message, transfer ) {
-        const {
-            worker,
-            workerId,
-            promise,
-            requests
-        } = this;
-        if ( promise ) {
-            const messageId = requests;
-            const payloadId = Object.assign( Object.create( null ), {
-                workerId,
-                messageId
-            } );
-            const payload = { id: payloadId, data: message };
-            return new Promise( ( resolve, reject ) => {
-                this.resolves[messageId] = resolve;
-                this.rejects[messageId] = reject;
-                if ( transfer ) {
-                    worker.postMessage( payload, transfer );
+        /**
+         * @param {MessageEvent} messageEvent
+         * @returns {void}
+         */
+        listen( messageEvent ) {
+            const { id, data } = messageEvent.data;
+            if ( typeof data === 'object' && 'type' in data ) {
+                if ( data.type in this.listeners ) {
+                    this.listeners[data.type]( id, data, messageEvent );
                 }
                 else {
-                    worker.postMessage( payload );
+                    this.listeners.default( id, data, messageEvent );
                 }
-            } );
+            }
+            else {
+                this.listeners.default( id, data, messageEvent );
+            }
         }
-        worker.postMessage( message, transfer );
+
+        /**
+         * @param {String} type - Message Type to look for when receiving a message
+         * @param {Function} func - Message Handler to call
+         * @param {PromiseListenerOptions} [options] - Options used to parse message data
+         * @returns {void}
+         */
+        addListener( type, func, options = {} ) {
+            const { keepEvent, accessor } = options;
+            this.listeners[type] = ( id, data, messageEvent ) => {
+                const _data = accessor ? data[accessor] : data;
+                const _args = keepEvent ? [ messageEvent, _data ] : [ _data ];
+                const _value = func( ..._args );
+                if ( _value instanceof Promise ) {
+                    _value.then( value => globalThis.postMessage( { id, data: value } ) );
+                    _value.catch( console.error );
+                }
+                else {
+                    globalThis.postMessage( { id, data: _value } );
+                }
+            };
+        }
+
+    };
+
+    /** @type {ProxyHandler} */
+    static #proxyHandler = {
+        get: ( target, property ) => {
+            if ( property in target ) {
+                return target[property];
+            }
+            return ( func, options ) => target.addListener( property, func, options || { accessor: 'data' } );
+        }
+    };
+
+    /**
+     * @returns {Proxy}
+     */
+    constructor() {
+        return ( globalThis._ = new Proxy( new PromiseHandler.#class(), PromiseHandler.#proxyHandler ) );
     }
 
 }
 
-export class Cluster {
+export class ExtendedWorkerProxy {
 
-    /**
-     * @typedef {Object} ClusterOptions
-     * @property {number} [size=4] - Number of Workers to spawn
-     */
-
-    /**
-     * @typedef {Object} ClusterModeOptions
-     * @property {boolean} race
-     * @property {boolean} spread
-     */
-
-    /**
-     * @typedef {Object} ClusterMessageOptions
-     * @property {any} [data]
-     * @property {Transferable[]} [transferable]
-     * @property {ClusterModeOptions} [modes]
-     */
-
-    /**
-     * @typedef {Cluster & Proxy} ClusterProxy
-     */
-
-    static get globalThis() {
-        return globalThis || self || window;
-    }
-
-    static get global() {
-        if ( 'Clusters' in this.globalThis ) {
-            return this.globalThis.Clusters;
+    /** @type {ProxyHandler} */
+    static #proxyHandler = {
+        get: ( target, property ) => {
+            if ( property in target ) {
+                return target[property];
+            }
+            return ( data, transferable ) => target.postMessage( { type: property, data }, transferable );
         }
-        return ( this.globalThis.Clusters = Object.assign( Object.create( null ), {
-            length: 0,
-            internals: Object.preventExtensions( Object.assign( Object.create( null ), { DEFAULT_SIZE: 4 } ) )
-        } ) );
-    }
+    };
 
     /**
-     * @param {number} size - Number of Workers to spawn
+     * @param {ExtendedWorker|WorkerObject} arg1
+     * @param {ProxyHandler} [arg2]
+     * @returns {Promise}
      */
-    static set DEFAULT_SIZE( size ) {
-        this.global.internals.DEFAULT_SIZE = size;
-    }
-
-    /**
-     * @returns {number}
-     */
-    static get DEFAULT_SIZE() {
-        return this.global.internals.DEFAULT_SIZE;
-    }
-
-    /**
-     * @param {Cluster} cluster
-     * @returns {number}
-     */
-    static add( cluster ) {
-        const clusters = Cluster.global;
-        const id = clusters.length++;
-        clusters[id] = cluster;
-        return id;
-    }
-
-    /**
-     * @param {number} id
-     * @returns {Cluster}
-     */
-    static get( id ) {
-        const clusters = Cluster.global;
-        return clusters[id];
-    }
-
-    /**
-     * @param {number} id
-     * @returns {void}
-     */
-    static delete( id ) {
-        const clusters = Cluster.global;
-        if ( clusters[id] ) {
-            clusters[id] = null;
+    constructor( arg1, arg2 ) {
+        if ( arg1 instanceof ExtendedWorker ) {
+            return new Proxy( arg1, ExtendedWorkerProxy.#proxyHandler );
         }
+        return new Proxy( new ExtendedWorker( arg1, arg2 ), ExtendedWorkerProxy.#proxyHandler );
     }
 
-    /**
-     * @returns {void}
-     */
-    static terminateAll() {
-        const clusters = Cluster.global;
-        // eslint-disable-next-line guard-for-in
-        for ( const id in clusters ) {
-            clusters[id].terminate();
-        }
-    }
+}
 
-    /**
-     * Return a proxied Cluster
-     *
-     * The proxied Cluster is by default a group of 4 module workers set to receive promise-based messages and managed through the builtin handler
-     *
-     * @param {string|Function} WorkerObject
-     * @param {ExtendedWorkerOptions & ClusterOptions} [ClusterOptions]
-     * @returns {ClusterProxy}
-     */
-    static new( WorkerObject, ClusterOptions = { size: Cluster.DEFAULT_SIZE } ) {
-        return new Cluster( WorkerObject, { promise: true, type: 'module', includeHandler: true, ...ClusterOptions } ).proxy;
-    }
-
-    /**
-     * @param {Function} func
-     * @param {any} [data]
-     * @param {Transferable[]} [transferable]
-     */
-    static async run( func, data, transferable ) {
-        const cluster = Cluster.new( `async()=>_.run(${ func })`, { size: Cluster.DEFAULT_SIZE } );
-        const result = await cluster.run( data, transferable );
-        cluster.terminate();
-        return result;
-    }
-
-    /**
-     * @param {Function} func
-     * @param {any} [data]
-     * @param {Transferable[]} [transferable]
-     */
-    static async $run( func, data, transferable ) {
-        const cluster = Cluster.new( `async()=>_.run(${ func })`, { size: Cluster.DEFAULT_SIZE } );
-        const result = await cluster.$run( data, transferable );
-        cluster.terminate();
-        return result;
-    }
-
-    /**
-     * @param {Function} func
-     * @param {any} [data]
-     * @param {Transferable[]} [transferable]
-     */
-    static async _run( func, data, transferable ) {
-        const cluster = Cluster.new( `async()=>_.run(${ func })`, { size: Cluster.DEFAULT_SIZE } );
-        const result = await cluster._run( data, transferable );
-        cluster.terminate();
-        return result;
-    }
-
-    /**
-     * @param {Function} func
-     * @param {any} [data]
-     * @param {Transferable[]} [transferable]
-     */
-    // eslint-disable-next-line camelcase
-    static async $_run( func, data, transferable ) {
-        const cluster = Cluster.new( `async()=>_.run(${ func })`, { size: Cluster.DEFAULT_SIZE } );
-        const result = await cluster.$_run( data, transferable );
-        cluster.terminate();
-        return result;
-    }
+export class ClusterProxy {
 
     /**
      * @param {string|number|Symbol} property
+     * @returns {object}
      */
     static parsePropertyDecorator( property ) {
         if ( typeof property === 'string' ) {
@@ -878,6 +489,217 @@ export class Cluster {
         return property;
     }
 
+    /** @type {ProxyHandler} */
+    static #proxyHandler = {
+        get: ( target, property ) => {
+            if ( property in target ) {
+                return target[property];
+            }
+            const { modes, property: propertyName } = ClusterProxy.parsePropertyDecorator( property );
+            return ( data, transferable ) => target.postMessage( { type: propertyName }, undefined, { modes, data, transferable } );
+        }
+    };
+
+    /**
+     * @param {Cluster|WorkerObject} arg1
+     * @param {ProxyHandler} [arg2]
+     * @returns {Promise}
+     */
+    constructor( arg1, arg2 ) {
+        if ( arg1 instanceof Cluster ) {
+            return new Proxy( arg1, ClusterProxy.#proxyHandler );
+        }
+        return new Proxy( new Cluster( arg1, arg2 ), ClusterProxy.#proxyHandler );
+    }
+
+}
+
+export class ExtendedWorker extends Worker {
+
+    /**
+     * Return a proxied ExtendedWorker
+     *
+     * The proxied ExtendedWorker is by default a module worker set to receive promise-based messages and managed through an builtin handler
+     *
+     * @param {string|Function} WorkerObject
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
+     * @returns {ExtendedWorkerProxy}
+     */
+    static new( WorkerObject, WorkerOptions = {} ) {
+        return new ExtendedWorkerProxy( WorkerObject, { promise: true, type: 'module', includeHandler: true, ...WorkerOptions } );
+    }
+
+    /**
+     * Run a single function in a worker and terminate the worker once the function has been executed
+     *
+     * @param {string|Function} func
+     * @param {any} [data]
+     * @param {Transferable[]} [transferable]
+     */
+    static async run( func, data, transferable ) {
+        const worker = new FunctionWorker( func );
+        const result = await worker.run( data, transferable );
+        worker.terminate();
+        return result;
+    }
+
+    #core = {
+        resolves: Object.create( null ),
+        rejects: Object.create( null ),
+        promise: false
+    };
+
+    #requests = 0;
+
+    /**
+     * @param {string|Function} WorkerObject
+     * @param {ExtendedWorkerOptions} [WorkerOptions]
+     */
+    constructor( WorkerObject, WorkerOptions ) {
+        let _workerObject;
+        if ( typeof WorkerObject === 'function' ) {
+            _workerObject = Multithread.createObjectURL( WorkerObject.toString(), WorkerOptions );
+        }
+        else if ( typeof WorkerObject === 'string' ) {
+            _workerObject = Multithread.createObjectURL( WorkerObject, WorkerOptions );
+        }
+        else {
+            throw new Error( 'WorkerObject is not a string or a function.' );
+        }
+        super( _workerObject, WorkerOptions );
+        if ( this.#core.promise = WorkerOptions && WorkerOptions.promise ) {
+            const messageHandler = message => {
+                if ( this.#core.promise ) {
+                    const { id, err, data } = message.data;
+                    const resolve = this.#core.resolves[id];
+                    const reject = this.#core.rejects[id];
+                    if ( !err && resolve ) {
+                        resolve( data );
+                    }
+                    else if ( reject && err ) {
+                        reject( err );
+                    }
+                    delete this.#core.resolves[id];
+                    delete this.#core.rejects[id];
+                }
+            };
+            this.addEventListener( 'message', messageHandler );
+            this.addEventListener( 'messageerror', messageHandler );
+        }
+        Object.freeze( this.#core );
+    }
+
+    /**
+     * Post message to Worker
+     * @param {any} message - Message to pass to Worker
+     * @param {Transferable[]} [transfer] - Transferable Object List to pass to Worker
+     * @returns {void|Promise}
+     */
+    postMessage( message, transfer ) {
+        const id = this.#requests++;
+        if ( this.#core.promise ) {
+            const payload = Object.assign( Object.create( null ), { id, data: message } );
+            return new Promise( ( resolve, reject ) => {
+                this.#core.resolves[id] = resolve;
+                this.#core.rejects[id] = reject;
+                if ( transfer ) {
+                    super.postMessage( payload, transfer );
+                }
+                else {
+                    super.postMessage( payload );
+                }
+            } );
+        }
+        super.postMessage( message, transfer );
+    }
+
+}
+
+export class Cluster {
+
+    static #DEFAULT_SIZE = 4;
+
+    /**
+     * @param {number} size - Number of Workers to spawn
+     */
+    static set DEFAULT_SIZE( size ) {
+        this.#DEFAULT_SIZE = size;
+    }
+
+    /**
+     * @returns {number}
+     */
+    static get DEFAULT_SIZE() {
+        return this.#DEFAULT_SIZE;
+    }
+
+    /**
+     * @param {Function} func
+     * @param {any} [data]
+     * @param {Transferable[]} [transferable]
+     */
+    static async run( func, data, transferable ) {
+        const cluster = new FunctionCluster( func );
+        const result = await cluster.run( data, transferable );
+        cluster.terminate();
+        return result;
+    }
+
+    /**
+     * @param {Function} func
+     * @param {any} [data]
+     * @param {Transferable[]} [transferable]
+     */
+    static async $run( func, data, transferable ) {
+        const cluster = new FunctionCluster( func );
+        const result = await cluster.$run( data, transferable );
+        cluster.terminate();
+        return result;
+    }
+
+    /**
+     * @param {Function} func
+     * @param {any} [data]
+     * @param {Transferable[]} [transferable]
+     */
+    static async _run( func, data, transferable ) {
+        const cluster = new FunctionCluster( func );
+        const result = await cluster._run( data, transferable );
+        cluster.terminate();
+        return result;
+    }
+
+    /**
+     * @param {Function} func
+     * @param {any} [data]
+     * @param {Transferable[]} [transferable]
+     */
+    // eslint-disable-next-line camelcase
+    static async $_run( func, data, transferable ) {
+        const cluster = new FunctionCluster( func );
+        const result = await cluster.$_run( data, transferable );
+        cluster.terminate();
+        return result;
+    }
+
+    /**
+     * Return a proxied Cluster
+     *
+     * The proxied Cluster is by default a group of 4 module workers set to receive promise-based messages and managed through the builtin handler
+     *
+     * @param {string|Function} WorkerObject
+     * @param {ExtendedWorkerOptions & ClusterOptions} [ClusterOptions]
+     * @returns {ClusterProxy}
+     */
+    static new( WorkerObject, ClusterOptions = { } ) {
+        return new ClusterProxy( WorkerObject, { promise: true, type: 'module', includeHandler: true, size: Cluster.DEFAULT_SIZE, ...ClusterOptions } );
+    }
+
+    #core = {
+        size: Cluster.DEFAULT_SIZE,
+        workers: undefined
+    };
+
     /**
      * Cluster of ExtendedWorker
      *
@@ -885,58 +707,14 @@ export class Cluster {
      * @param {ExtendedWorkerOptions & ClusterOptions} [ClusterOptions]
      */
     constructor( WorkerObject, ClusterOptions ) {
-        const clusterId = Cluster.add( this );
-        Object.defineProperty( this, 'internals', {
-            value: Object.preventExtensions(
-                Object.assign(
-                    Object.create( null ),
-                    {
-                        workers: [],
-                        clusterId,
-                        size: ClusterOptions ? ClusterOptions.size : Cluster.DEFAULT_SIZE
-                    }
-                )
-            )
-        } );
-        for ( let i = 0; i < this.size; i++ ) {
-            this.workers.push( new ExtendedWorker( WorkerObject, ClusterOptions ) );
+        const size = ( ClusterOptions ? ClusterOptions.size : Cluster.DEFAULT_SIZE ) || Cluster.DEFAULT_SIZE;
+        this.#core.workers = Array( size );
+        this.#core.size = size;
+        for ( let i = 0; i < this.#core.size; i++ ) {
+            this.#core.workers[i] = new ExtendedWorker( WorkerObject, ClusterOptions );
         }
-    }
-
-    /**
-     * @returns {ClusterProxy}
-     */
-    get proxy() {
-        return new Proxy( this, {
-            get: ( target, property ) => {
-                if ( property in target ) {
-                    return target[property];
-                }
-                const { modes, property: propertyName } = Cluster.parsePropertyDecorator( property );
-                return ( data, transferable ) => target.postMessage( { type: propertyName }, undefined, { modes, data, transferable } );
-            }
-        } );
-    }
-
-    /**
-     * @returns {ExtendedWorker[]}
-     */
-    get workers() {
-        return this.internals.workers;
-    }
-
-    /**
-     * @returns {number}
-     */
-    get clusterId() {
-        return this.internals.clusterId;
-    }
-
-    /**
-     * @returns {number}
-     */
-    get size() {
-        return this.internals.size;
+        Object.freeze( this.#core.workers );
+        Object.freeze( this.#core );
     }
 
     /**
@@ -944,7 +722,7 @@ export class Cluster {
      * @returns {Boolean[]}
      */
     dispatchEvent( event ) {
-        return this.workers.map( worker => worker.dispatchEvent( event ) );
+        return Promise.all( this.#core.workers.map( worker => worker.dispatchEvent( event ) ) );
     }
 
     /**
@@ -954,7 +732,7 @@ export class Cluster {
      * @param {boolean|AddEventListenerOptions} [options]
      */
     addEventListener( type, listener, options ) {
-        return this.workers.map( worker => worker.addEventListener( type, listener, options ) );
+        return Promise.all( this.#core.workers.map( worker => worker.addEventListener( type, listener, options ) ) );
     }
 
     /**
@@ -964,7 +742,7 @@ export class Cluster {
      * @param {boolean|EventListenerOptions} [options]
      */
     removeEventListener( type, listener, options ) {
-        return this.workers.map( worker => worker.removeEventListener( type, listener, options ) );
+        return Promise.all( this.#core.workers.map( worker => worker.removeEventListener( type, listener, options ) ) );
     }
 
     /**
@@ -978,27 +756,97 @@ export class Cluster {
         if ( race !== undefined || spread !== undefined ) {
             switch ( true ) {
                 case race && spread:
-                    return Promise.race( this.workers.map( ( worker, i ) => worker.postMessage( { ...message, data: data[i] }, transferable ? transferable[i] : null ) ) );
+                    return Promise.race( this.#core.workers.map( ( worker, i ) => worker.postMessage( { ...message, data: data[i] }, transferable ? transferable[i] : null ) ) );
                 case race:
-                    return Promise.race( this.workers.map( worker => worker.postMessage( { ...message, data }, transferable ) ) );
+                    return Promise.race( this.#core.workers.map( worker => worker.postMessage( { ...message, data }, transferable ) ) );
                 case spread:
-                    return Promise.all( this.workers.map( ( worker, i ) => worker.postMessage( { ...message, data: data[i] }, transferable ? transferable[i] : null ) ) );
+                    return Promise.all( this.#core.workers.map( ( worker, i ) => worker.postMessage( { ...message, data: data[i] }, transferable ? transferable[i] : null ) ) );
                 default:
-                    return Promise.all( this.workers.map( worker => worker.postMessage( { ...message, data }, transferable ) ) );
+                    return Promise.all( this.#core.workers.map( worker => worker.postMessage( { ...message, data }, transferable ) ) );
             }
         }
-        return Promise.all( this.workers.map( worker => worker.postMessage( message, transfer ) ) );
+        return Promise.all( this.#core.workers.map( worker => worker.postMessage( message, transfer ) ) );
     }
 
     terminate() {
-        this.workers.forEach( worker => worker.terminate() );
-        Cluster.delete( this.clusterId );
+        for ( const worker of this.#core.workers ) {
+            worker.terminate();
+        }
+    }
+
+}
+
+export class FunctionWorker extends ExtendedWorkerProxy {
+
+    /**
+     * @param {Function} fn
+     * @param {WorkerOptions} [WorkerOptions]
+     */
+    constructor( fn, WorkerOptions ) {
+        super( `async()=>_.proxy_run(${ fn.toString() })`, { promise: true, type: 'module', includeHandler: true, ...WorkerOptions } );
+    }
+
+    /**
+     * @param {...any} [args]
+     * @returns {Promise}
+     */
+    run( ...args ) {
+        return super.proxy_run( ...args );
+    }
+
+}
+
+export class FunctionCluster extends ClusterProxy {
+
+    /**
+     * @param {Function} fn
+     * @param {ClusterOptions} [ClusterOptions]
+     */
+    constructor( fn, ClusterOptions ) {
+        super( `async()=>_.proxy_run(${ fn })`, { size: Cluster.DEFAULT_SIZE, ...ClusterOptions } );
+    }
+
+    /**
+     * @param {...any} [args]
+     * @returns {Promise}
+     */
+    run( ...args ) {
+        return super.proxy_run( ...args );
+    }
+
+    /**
+     * @param {...any} [args]
+     * @returns {Promise}
+     */
+    $run( ...args ) {
+        return super.$proxy_run( ...args );
+    }
+
+    /**
+     * @param {...any} [args]
+     * @returns {Promise}
+     */
+    _run( ...args ) {
+        return super._proxy_run( ...args );
+    }
+
+    /**
+     * @param {...any} [args]
+     * @returns {Promise}
+     */
+    // eslint-disable-next-line camelcase
+    $_run( ...args ) {
+        return super.$_proxy_run( ...args );
     }
 
 }
 
 export default {
+    Cluster,
+    ClusterProxy,
     ExtendedWorker,
-    PromiseHandler,
-    Cluster
+    ExtendedWorkerProxy,
+    FunctionCluster,
+    FunctionWorker,
+    PromiseHandler
 };

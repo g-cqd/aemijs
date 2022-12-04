@@ -97,29 +97,29 @@ export class VariableManager {
             }
         }
 
-        for ( const fo of found ) {
-            if ( fo.nodeType === 2 ) {
-                const attr = fo.nodeValue;
+        for ( const finding of found ) {
+            if ( finding.nodeType === 2 ) {
+                const attr = finding.nodeValue;
                 objectForEach( this.map, async ( key, value ) => {
                     const reg = new RegExp( `\\{\\{${ key }:?(?:.|\\n|\\r)*?\\}\\}`, 'gu' );
                     const res = reg.exec( attr );
                     if ( res && res.length === 1 ) {
                         const [ fres ] = res.filter( e => e );
                         const { parser, exec } = value;
-                        const e = exec( VariableManager.parse( key, parser, fres ) );
-                        if ( e instanceof Promise ) {
-                            fo.nodeValue = await e;
+                        const rendering = exec( VariableManager.parse( key, parser, fres ) );
+                        if ( rendering instanceof Promise ) {
+                            finding.nodeValue = await rendering;
                         }
                         else {
-                            fo.nodeValue = e;
+                            finding.nodeValue = rendering;
                         }
                     }
                 } );
             }
             else {
                 objectForEach( this.map, async ( key, value ) => {
-                    let html = fo.innerHTML;
-                    fo.innerHTML = '';
+                    let html = finding.innerHTML;
+                    finding.innerHTML = '';
                     const reg = new RegExp( `\\{\\{${ key }:?(?:.|\\n|\\r)*?\\}\\}`, 'gu' );
                     const res = html.match( reg );
                     if ( res && res.length > 0 ) {
@@ -156,7 +156,7 @@ export class VariableManager {
                             }
                         }
                     }
-                    fo.innerHTML = html;
+                    finding.innerHTML = html;
                 } );
             }
         }

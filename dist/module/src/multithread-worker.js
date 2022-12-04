@@ -1,1 +1,0 @@
-(globalThis||self||window).listeners=new ExtenderWorkerHandler;
