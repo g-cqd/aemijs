@@ -68,32 +68,32 @@ class Multithread {
      * @returns {string}
      */
     static get scriptHandler() {
-        return `()=>((globalThis||self||window)._=new (${ PromiseHandler.toString() })());`;
+        return `()=>((globalThis||self||window)._=new (${PromiseHandler.toString()})());`;
     }
 
     /**
      * @returns {string}
      */
     static get moduleHandler() {
-        return `(globalThis||self||window)._=new (${ PromiseHandler.toString() })();`;
+        return `(globalThis||self||window)._=new (${PromiseHandler.toString()})();`;
     }
 
     /**
      * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {string[]}
      */
-    static importLocalScripts( WorkerOptions = {} ) {
+    static importLocalScripts(WorkerOptions = {}) {
         const scripts = [];
-        if ( 'localImports' in WorkerOptions ) {
+        if ('localImports' in WorkerOptions) {
             const { localImports: imports } = WorkerOptions;
-            if ( typeof imports === 'string' ) {
-                scripts.push( `${ window.location.origin }/${ removeStartingSlash( imports ) }` );
+            if (typeof imports === 'string') {
+                scripts.push(`${window.location.origin}/${removeStartingSlash(imports)}`);
             }
-            else if ( Array.isArray( scripts ) ) {
-                scripts.push( ...scripts.map( path => `${ window.location.origin }/${ removeStartingSlash( path ) }` ) );
+            else if (Array.isArray(scripts)) {
+                scripts.push(...scripts.map(path => `${window.location.origin}/${removeStartingSlash(path)}`));
             }
             else {
-                throw new Error( 'WorkerOptions.localImports is not correctly defined.' );
+                throw new Error('WorkerOptions.localImports is not correctly defined.');
             }
         }
         return scripts;
@@ -103,18 +103,18 @@ class Multithread {
      * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {string[]}
      */
-    static importScripts( WorkerOptions = {} ) {
+    static importScripts(WorkerOptions = {}) {
         const scripts = [];
-        if ( 'importScripts' in WorkerOptions ) {
+        if ('importScripts' in WorkerOptions) {
             const { importScripts: imports } = WorkerOptions;
-            if ( typeof imports === 'string' ) {
-                scripts.push( imports );
+            if (typeof imports === 'string') {
+                scripts.push(imports);
             }
-            else if ( Array.isArray( imports ) ) {
-                scripts.push( ...imports );
+            else if (Array.isArray(imports)) {
+                scripts.push(...imports);
             }
             else {
-                throw new Error( 'WorkerOptions.importScripts is not correctly defined.' );
+                throw new Error('WorkerOptions.importScripts is not correctly defined.');
             }
         }
         return scripts;
@@ -124,58 +124,58 @@ class Multithread {
      * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {string[]}
      */
-    static importModuleLocalScripts( WorkerOptions = {} ) {
+    static importModuleLocalScripts(WorkerOptions = {}) {
         const modules = [];
-        if ( 'localImports' in WorkerOptions ) {
+        if ('localImports' in WorkerOptions) {
             const { localImports: imports } = WorkerOptions;
-            if ( typeof imports === 'string' ) {
-                modules.push( `import ${ getLastPath( imports ) } from '${ window.location.origin }/${ imports }';` );
+            if (typeof imports === 'string') {
+                modules.push(`import ${getLastPath(imports)} from '${window.location.origin}/${imports}';`);
             }
-            else if ( Array.isArray( imports ) ) {
-                for ( const _import of imports ) {
-                    if ( typeof _import === 'string' ) {
-                        modules.push( `import ${ getLastPath( _import ) } from '${ window.location.origin }/${ removeStartingSlash( _import ) }';` );
+            else if (Array.isArray(imports)) {
+                for (const _import of imports) {
+                    if (typeof _import === 'string') {
+                        modules.push(`import ${getLastPath(_import)} from '${window.location.origin}/${removeStartingSlash(_import)}';`);
                     }
-                    else if ( typeof _import === 'object' ) {
-                        if ( !( ( 'objects' in _import || '*' in _import || 'name' in _import ) && 'path' in _import ) ) {
-                            throw new Error( 'WorkerOptions.importScripts is not correctly defined.' );
+                    else if (typeof _import === 'object') {
+                        if (!(('objects' in _import || '*' in _import || 'name' in _import) && 'path' in _import)) {
+                            throw new Error('WorkerOptions.importScripts is not correctly defined.');
                         }
                         const { objects, '*': _as, name, path } = _import;
-                        if ( name ) {
-                            modules.push( `import ${ name } from '${ window.location.origin }/${ removeStartingSlash( path ) }';` );
+                        if (name) {
+                            modules.push(`import ${name} from '${window.location.origin}/${removeStartingSlash(path)}';`);
                         }
-                        else if ( _as ) {
+                        else if (_as) {
                             modules.push(
-                                `import ${ objects ?
+                                `import ${objects ?
                                     typeof objects === 'string' ?
-                                        `{ ${ objects } },` :
-                                        `{ ${ objects.join( ',' ) } }, ` :
+                                        `{ ${objects} },` :
+                                        `{ ${objects.join(',')} }, ` :
                                     ''
-                                }* as ${ _as } from '${ window.location.origin }/${ removeStartingSlash( path ) }';`
+                                }* as ${_as} from '${window.location.origin}/${removeStartingSlash(path)}';`
                             );
                         }
-                        else if ( objects ) {
+                        else if (objects) {
                             modules.push(
-                                `import ${ objects ?
+                                `import ${objects ?
                                     typeof objects === 'string' ?
-                                        `{ ${ objects } },` :
-                                        `{ ${ objects.join( ',' ) } } ` :
+                                        `{ ${objects} },` :
+                                        `{ ${objects.join(',')} } ` :
                                     ''
-                                } from '${ window.location.origin }/${ removeStartingSlash( path ) }';`
+                                } from '${window.location.origin}/${removeStartingSlash(path)}';`
                             );
                         }
                         else {
-                            throw new Error( 'WorkerOptions.importScripts is not correctly defined.' );
+                            throw new Error('WorkerOptions.importScripts is not correctly defined.');
                         }
                     }
                 }
             }
             else {
-                throw new Error( 'WorkerOptions.localImports is not correctly defined.' );
+                throw new Error('WorkerOptions.localImports is not correctly defined.');
             }
         }
-        if ( 'includeHandler' in WorkerOptions && WorkerOptions.includeHandler === true ) {
-            modules.push( Multithread.moduleHandler );
+        if ('includeHandler' in WorkerOptions && WorkerOptions.includeHandler === true) {
+            modules.push(Multithread.moduleHandler);
         }
         return modules;
     }
@@ -184,54 +184,54 @@ class Multithread {
      * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {string[]}
      */
-    static importModuleScripts( WorkerOptions = {} ) {
+    static importModuleScripts(WorkerOptions = {}) {
         const modules = [];
-        if ( 'importScripts' in WorkerOptions ) {
+        if ('importScripts' in WorkerOptions) {
             const { importScripts: imports } = WorkerOptions;
-            if ( typeof imports === 'string' ) {
-                modules.push( `import ${ getLastPath( imports ) } from '${ imports }';` );
+            if (typeof imports === 'string') {
+                modules.push(`import ${getLastPath(imports)} from '${imports}';`);
             }
-            else if ( Array.isArray( imports ) ) {
-                for ( const _import of imports ) {
-                    if ( typeof _import === 'string' ) {
-                        modules.push( `import ${ getLastPath( _import ) } from '${ _import }';` );
+            else if (Array.isArray(imports)) {
+                for (const _import of imports) {
+                    if (typeof _import === 'string') {
+                        modules.push(`import ${getLastPath(_import)} from '${_import}';`);
                     }
-                    else if ( typeof _import === 'object' ) {
-                        if ( !( ( 'objects' in _import || '*' in _import || 'name' in _import ) && 'path' in _import ) ) {
-                            throw new Error( 'WorkerOptions.importScripts is not correctly defined.' );
+                    else if (typeof _import === 'object') {
+                        if (!(('objects' in _import || '*' in _import || 'name' in _import) && 'path' in _import)) {
+                            throw new Error('WorkerOptions.importScripts is not correctly defined.');
                         }
                         const { objects, '*': _as, name, path } = _import;
-                        if ( name ) {
-                            modules.push( `import ${ name } from '${ path }';` );
+                        if (name) {
+                            modules.push(`import ${name} from '${path}';`);
                         }
-                        else if ( _as ) {
+                        else if (_as) {
                             modules.push(
-                                `import ${ objects ?
+                                `import ${objects ?
                                     typeof objects === 'string' ?
-                                        `{ ${ objects } },` :
-                                        `{ ${ objects.join( ',' ) } }, ` :
+                                        `{ ${objects} },` :
+                                        `{ ${objects.join(',')} }, ` :
                                     ''
-                                }* as ${ _as } from '${ path }';`
+                                }* as ${_as} from '${path}';`
                             );
                         }
-                        else if ( objects ) {
+                        else if (objects) {
                             modules.push(
-                                `import ${ objects ?
+                                `import ${objects ?
                                     typeof objects === 'string' ?
-                                        `{ ${ objects } },` :
-                                        `{ ${ objects.join( ',' ) } } ` :
+                                        `{ ${objects} },` :
+                                        `{ ${objects.join(',')} } ` :
                                     ''
-                                } from '${ path }';`
+                                } from '${path}';`
                             );
                         }
                         else {
-                            throw new Error( 'WorkerOptions.importScripts is not correctly defined.' );
+                            throw new Error('WorkerOptions.importScripts is not correctly defined.');
                         }
                     }
                 }
             }
             else {
-                throw new Error( 'WorkerOptions.importScripts is not correctly defined.' );
+                throw new Error('WorkerOptions.importScripts is not correctly defined.');
             }
         }
         return modules;
@@ -241,18 +241,18 @@ class Multithread {
      * @returns {string}
      */
     static getHandlerAsURL() {
-        return Multithread.toObjectURL( `(${ Multithread.scriptHandler })();` );
+        return Multithread.toObjectURL(`(${Multithread.scriptHandler})();`);
     }
 
     /**
      * @param {string} WorkerString
      * @returns {string}
      */
-    static uglifyScriptWorker( WorkerString ) {
-        if ( typeof WorkerString === 'string' ) {
-            return Multithread.toObjectURL( WorkerString );
+    static uglifyScriptWorker(WorkerString) {
+        if (typeof WorkerString === 'string') {
+            return Multithread.toObjectURL(WorkerString);
         }
-        throw new Error( 'WorkerString is not a string.' );
+        throw new Error('WorkerString is not a string.');
     }
 
     /**
@@ -260,26 +260,26 @@ class Multithread {
      * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {string}
      */
-    static prepareForScriptImport( WorkerString, WorkerOptions = {} ) {
-        if ( typeof WorkerString !== 'string' ) {
-            throw new Error( 'WorkerString is not a string.' );
+    static prepareForScriptImport(WorkerString, WorkerOptions = {}) {
+        if (typeof WorkerString !== 'string') {
+            throw new Error('WorkerString is not a string.');
         }
         const scripts = [
-            ...Multithread.importLocalScripts( WorkerOptions ),
-            ...Multithread.importScripts( WorkerOptions )
+            ...Multithread.importLocalScripts(WorkerOptions),
+            ...Multithread.importScripts(WorkerOptions)
         ];
-        if ( 'includeHandler' in WorkerOptions && WorkerOptions.includeHandler === true ) {
-            scripts.push( Multithread.getHandlerAsURL() );
+        if ('includeHandler' in WorkerOptions && WorkerOptions.includeHandler === true) {
+            scripts.push(Multithread.getHandlerAsURL());
         }
         let WorkerBody;
-        if ( 'uglify' in WorkerOptions && WorkerOptions.uglify === true ) {
-            scripts.push( Multithread.uglifyScriptWorker( WorkerString ) );
-            WorkerBody = `importScripts("${ scripts.join( '","' ) }");`;
+        if ('uglify' in WorkerOptions && WorkerOptions.uglify === true) {
+            scripts.push(Multithread.uglifyScriptWorker(WorkerString));
+            WorkerBody = `importScripts("${scripts.join('","')}");`;
         }
         else {
-            WorkerBody = `${ scripts.length > 0 ? `importScripts("${ scripts.join( '","' ) }");\n` : '' }(${ WorkerString })();`;
+            WorkerBody = `${scripts.length > 0 ? `importScripts("${scripts.join('","')}");\n` : ''}(${WorkerString})();`;
         }
-        return Multithread.toObjectURL( WorkerBody );
+        return Multithread.toObjectURL(WorkerBody);
     }
 
     /**
@@ -287,22 +287,22 @@ class Multithread {
      * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {string}
      */
-    static prepareForModuleImport( WorkerString, WorkerOptions = {} ) {
-        if ( typeof WorkerString !== 'string' ) {
-            throw new Error( 'WorkerString is not a string.' );
+    static prepareForModuleImport(WorkerString, WorkerOptions = {}) {
+        if (typeof WorkerString !== 'string') {
+            throw new Error('WorkerString is not a string.');
         }
         const modules = [
-            ...Multithread.importModuleLocalScripts( WorkerOptions ),
-            ...Multithread.importModuleScripts( WorkerOptions )
+            ...Multithread.importModuleLocalScripts(WorkerOptions),
+            ...Multithread.importModuleScripts(WorkerOptions)
         ];
         let WorkerBody;
-        if ( 'uglify' in WorkerOptions && WorkerOptions.uglify === true ) {
-            throw new Error( 'WorkerOptions.uglify can not be applied to module worker.' );
+        if ('uglify' in WorkerOptions && WorkerOptions.uglify === true) {
+            throw new Error('WorkerOptions.uglify can not be applied to module worker.');
         }
         else {
-            WorkerBody = `${ modules.length > 0 ? `${ modules.join( '\n' ) }\n` : '' }(${ WorkerString })();`;
+            WorkerBody = `${modules.length > 0 ? `${modules.join('\n')}\n` : ''}(${WorkerString})();`;
         }
-        return Multithread.toObjectURL( WorkerBody );
+        return Multithread.toObjectURL(WorkerBody);
     }
 
     /**
@@ -311,8 +311,8 @@ class Multithread {
      * @param {string} data - Data to be sent to the Worker
      * @returns {string}
      */
-    static toObjectURL( data ) {
-        return URL.createObjectURL( new Blob( [ data ], { type: 'application/javascript' } ) );
+    static toObjectURL(data) {
+        return URL.createObjectURL(new Blob([data], { type: 'application/javascript' }));
     }
 
     /**
@@ -320,22 +320,22 @@ class Multithread {
      * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {string}
      */
-    static createObjectURL( WorkerString, WorkerOptions = {} ) {
-        if ( typeof WorkerOptions === 'object' ) {
-            if ( 'type' in WorkerOptions && WorkerOptions.type === 'module' ) {
-                return Multithread.prepareForModuleImport( WorkerString, WorkerOptions );
+    static createObjectURL(WorkerString, WorkerOptions = {}) {
+        if (typeof WorkerOptions === 'object') {
+            if ('type' in WorkerOptions && WorkerOptions.type === 'module') {
+                return Multithread.prepareForModuleImport(WorkerString, WorkerOptions);
             }
-            else if ( 'type' in WorkerOptions && !( WorkerOptions.type === 'module' || WorkerOptions.type === 'classic' ) ) {
-                throw new Error( `WorkerOptions.type:${ WorkerOptions.type } is not a valid type.` );
+            else if ('type' in WorkerOptions && !(WorkerOptions.type === 'module' || WorkerOptions.type === 'classic')) {
+                throw new Error(`WorkerOptions.type:${WorkerOptions.type} is not a valid type.`);
             }
             else {
-                return Multithread.prepareForScriptImport( WorkerString, WorkerOptions );
+                return Multithread.prepareForScriptImport(WorkerString, WorkerOptions);
             }
         }
-        else if ( typeof WorkerString === 'string' ) {
-            return Multithread.toObjectURL( WorkerString );
+        else if (typeof WorkerString === 'string') {
+            return Multithread.toObjectURL(WorkerString);
         }
-        throw new Error( 'WorkerString is not a string.' );
+        throw new Error('WorkerString is not a string.');
     }
 
 }
@@ -346,12 +346,12 @@ class Multithread {
  * @param {string} path - Path to file
  * @returns {string}
  */
-function getLastPath( path ) {
+function getLastPath(path) {
     return path
-        .split( /\//gu )
+        .split(/\//gu)
         .pop()
-        .split( /\./gu )
-        .filter( str => str.length > 0 )
+        .split(/\./gu)
+        .filter(str => str.length > 0)
         .shift();
 }
 
@@ -361,21 +361,27 @@ function getLastPath( path ) {
  * @param {string} path
  * @returns {string}
  */
-function removeStartingSlash( path ) {
-    return `${ path.replace( /^\/*/gu, '' ) }`;
+function removeStartingSlash(path) {
+    return `${path.replace(/^\/*/gu, '')}`;
 }
 
 export class PromiseHandler {
 
     static #class = class {
 
-        #core = Object.assign( Object.create( null ), { listeners: Object.create( null ) } );
+        /* eslint-env worker */
+
+        #core = Object.assign(Object.create(null), {
+            resolves: Object.create(null),
+            rejects: Object.create(null),
+            listeners: Object.create(null)
+        });
 
         constructor() {
-            this.addListener( 'default', value => value );
-            globalThis.addEventListener( 'message', message => this.listen( message ) );
-            globalThis.addEventListener( 'messageerror', message => this.listen( message ) );
-            Object.freeze( this.#core );
+            this.addListener('default', value => value);
+            globalThis.addEventListener('message', message => this.listen(message));
+            globalThis.addEventListener('messageerror', message => this.listen(message));
+            Object.freeze(this.#core);
         }
 
         get listeners() {
@@ -386,18 +392,29 @@ export class PromiseHandler {
          * @param {MessageEvent} messageEvent
          * @returns {void}
          */
-        listen( messageEvent ) {
-            const { id, data } = messageEvent.data;
-            if ( typeof data === 'object' && 'type' in data ) {
-                if ( data.type in this.listeners ) {
-                    this.listeners[data.type]( id, data, messageEvent );
+        listen(messageEvent) {
+            const { id, data, err } = messageEvent.data;
+            if (id in this.#core.resolves || id in this.#core.rejects) {
+                const resolve = this.#core.resolves[id];
+                const reject = this.#core.rejects[id];
+                if (!err && resolve) {
+                    resolve(data);
+                }
+                else if (reject && err) {
+                    reject(err);
+                }
+                delete this.#core.resolves[id];
+                delete this.#core.rejects[id];
+            } else if (typeof data === 'object' && 'type' in data) {
+                if (data.type in this.listeners) {
+                    this.listeners[data.type](id, data, messageEvent);
                 }
                 else {
-                    this.listeners.default( id, data, messageEvent );
+                    this.listeners.default(id, data, messageEvent);
                 }
             }
             else {
-                this.listeners.default( id, data, messageEvent );
+                this.listeners.default(id, data, messageEvent);
             }
         }
 
@@ -407,31 +424,55 @@ export class PromiseHandler {
          * @param {PromiseListenerOptions} [options] - Options used to parse message data
          * @returns {void}
          */
-        addListener( type, func, options = {} ) {
+        addListener(type, func, options = {}) {
             const { keepEvent, accessor } = options;
-            this.listeners[type] = ( id, data, messageEvent ) => {
+            this.listeners[type] = (id, data, messageEvent) => {
                 const _data = accessor ? data[accessor] : data;
-                const _args = keepEvent ? [ messageEvent, _data ] : [ _data ];
-                const _value = func( ..._args );
-                if ( _value instanceof Promise ) {
-                    _value.then( value => globalThis.postMessage( { id, data: value } ) );
-                    _value.catch( console.error );
+                const _args = keepEvent ? [messageEvent, _data] : [_data];
+                const _value = func(..._args);
+                if (_value instanceof Promise) {
+                    _value.then(value => globalThis.postMessage({ id, data: value }));
+                    _value.catch(console.error);
                 }
                 else {
-                    globalThis.postMessage( { id, data: _value } );
+                    globalThis.postMessage({ id, data: _value });
                 }
             };
+        }
+
+        /**
+         * Post message to Parent
+         * @param {any} message - Message to pass to Parent
+         * @param {Transferable[]} [transfer] - Transferable Object List to pass to Parent
+         * @returns {void|Promise}
+         */
+        postMessage(message, transfer) {
+            const id = globalThis.crypto.randomUUID();
+            const payload = Object.assign(Object.create(null), { id, data: message });
+            return new Promise((resolve, reject) => {
+                this.#core.resolves[id] = resolve;
+                this.#core.rejects[id] = reject;
+                if (transfer) {
+                    self.postMessage(payload, transfer);
+                }
+                else {
+                    self.postMessage(payload);
+                }
+            });
         }
 
     };
 
     /** @type {ProxyHandler} */
     static #proxyHandler = {
-        get: ( target, property ) => {
-            if ( property in target ) {
+        get: (target, property) => {
+            if (property in target) {
                 return target[property];
             }
-            return ( func, options ) => target.addListener( property, func, options || { accessor: 'data' } );
+            if (property.startsWith('__')) {
+                return data => target.postMessage({ type: property.slice(2), data });
+            }
+            return (func, options) => target.addListener(property, func, options || { accessor: 'data' });
         }
     };
 
@@ -439,7 +480,7 @@ export class PromiseHandler {
      * @returns {Proxy}
      */
     constructor() {
-        return ( globalThis._ = new Proxy( new PromiseHandler.#class(), PromiseHandler.#proxyHandler ) );
+        return (globalThis._ = new Proxy(new PromiseHandler.#class(), PromiseHandler.#proxyHandler));
     }
 
 }
@@ -448,11 +489,21 @@ export class ExtendedWorkerProxy {
 
     /** @type {ProxyHandler} */
     static #proxyHandler = {
-        get: ( target, property ) => {
-            if ( property in target ) {
+        get: (target, property) => {
+            if (property in target) {
                 return target[property];
             }
-            return ( data, transferable ) => target.postMessage( { type: property, data }, transferable );
+            if (property.startsWith('__')) {
+                return func => target.addEventListener('message', ({ data: messageData }) => {
+                    const { data: realData, id } = messageData;
+                    const { type, data } = realData;
+                    if (type === property.slice(2)) {
+                        const result = func(data);
+                        Worker.prototype.postMessage.call(target,{ id, data: result });
+                    }
+                });
+            }
+            return (data, transferable) => target.postMessage({ type: property, data }, transferable);
         }
     };
 
@@ -461,11 +512,11 @@ export class ExtendedWorkerProxy {
      * @param {ProxyHandler} [arg2]
      * @returns {Promise}
      */
-    constructor( arg1, arg2 ) {
-        if ( arg1 instanceof ExtendedWorker ) {
-            return new Proxy( arg1, ExtendedWorkerProxy.#proxyHandler );
+    constructor(arg1, arg2) {
+        if (arg1 instanceof ExtendedWorker) {
+            return new Proxy(arg1, ExtendedWorkerProxy.#proxyHandler);
         }
-        return new Proxy( new ExtendedWorker( arg1, arg2 ), ExtendedWorkerProxy.#proxyHandler );
+        return new Proxy(new ExtendedWorker(arg1, arg2), ExtendedWorkerProxy.#proxyHandler);
     }
 
 }
@@ -476,14 +527,14 @@ export class ClusterProxy {
      * @param {string|number|Symbol} property
      * @returns {object}
      */
-    static parsePropertyDecorator( property ) {
-        if ( typeof property === 'string' ) {
-            const { groups } = property.match( /^(?<race>\$)?(?<spread>_)?/u );
-            const race = Boolean( groups.race );
-            const spread = Boolean( groups.spread );
+    static parsePropertyDecorator(property) {
+        if (typeof property === 'string') {
+            const { groups } = property.match(/^(?<race>\$)?(?<spread>_)?/u);
+            const race = Boolean(groups.race);
+            const spread = Boolean(groups.spread);
             return {
                 modes: { race, spread },
-                property: property.slice( race + spread )
+                property: property.slice(race + spread)
             };
         }
         return property;
@@ -491,12 +542,12 @@ export class ClusterProxy {
 
     /** @type {ProxyHandler} */
     static #proxyHandler = {
-        get: ( target, property ) => {
-            if ( property in target ) {
+        get: (target, property) => {
+            if (property in target) {
                 return target[property];
             }
-            const { modes, property: propertyName } = ClusterProxy.parsePropertyDecorator( property );
-            return ( data, transferable ) => target.postMessage( { type: propertyName }, undefined, { modes, data, transferable } );
+            const { modes, property: propertyName } = ClusterProxy.parsePropertyDecorator(property);
+            return (data, transferable) => target.postMessage({ type: propertyName }, undefined, { modes, data, transferable });
         }
     };
 
@@ -505,11 +556,11 @@ export class ClusterProxy {
      * @param {ProxyHandler} [arg2]
      * @returns {Promise}
      */
-    constructor( arg1, arg2 ) {
-        if ( arg1 instanceof Cluster ) {
-            return new Proxy( arg1, ClusterProxy.#proxyHandler );
+    constructor(arg1, arg2) {
+        if (arg1 instanceof Cluster) {
+            return new Proxy(arg1, ClusterProxy.#proxyHandler);
         }
-        return new Proxy( new Cluster( arg1, arg2 ), ClusterProxy.#proxyHandler );
+        return new Proxy(new Cluster(arg1, arg2), ClusterProxy.#proxyHandler);
     }
 
 }
@@ -525,8 +576,8 @@ export class ExtendedWorker extends Worker {
      * @param {ExtendedWorkerOptions} [WorkerOptions]
      * @returns {ExtendedWorkerProxy}
      */
-    static new( WorkerObject, WorkerOptions = {} ) {
-        return new ExtendedWorkerProxy( WorkerObject, { promise: true, type: 'module', includeHandler: true, ...WorkerOptions } );
+    static new(WorkerObject, WorkerOptions = {}) {
+        return new ExtendedWorkerProxy(WorkerObject, { promise: true, type: 'module', includeHandler: true, ...WorkerOptions });
     }
 
     /**
@@ -536,57 +587,57 @@ export class ExtendedWorker extends Worker {
      * @param {any} [data]
      * @param {Transferable[]} [transferable]
      */
-    static async run( func, data, transferable ) {
-        const worker = new FunctionWorker( func );
-        const result = await worker.run( data, transferable );
+    static async run(func, data, transferable) {
+        const worker = new FunctionWorker(func);
+        const result = await worker.run(data, transferable);
         worker.terminate();
         return result;
     }
 
     #core = {
-        resolves: Object.create( null ),
-        rejects: Object.create( null ),
+        resolves: Object.create(null),
+        rejects: Object.create(null),
         promise: false
     };
-
-    #requests = 0;
 
     /**
      * @param {string|Function} WorkerObject
      * @param {ExtendedWorkerOptions} [WorkerOptions]
      */
-    constructor( WorkerObject, WorkerOptions ) {
+    constructor(WorkerObject, WorkerOptions) {
         let _workerObject;
-        if ( typeof WorkerObject === 'function' ) {
-            _workerObject = Multithread.createObjectURL( WorkerObject.toString(), WorkerOptions );
+        if (typeof WorkerObject === 'function') {
+            _workerObject = Multithread.createObjectURL(WorkerObject.toString(), WorkerOptions);
         }
-        else if ( typeof WorkerObject === 'string' ) {
-            _workerObject = Multithread.createObjectURL( WorkerObject, WorkerOptions );
+        else if (typeof WorkerObject === 'string') {
+            _workerObject = Multithread.createObjectURL(WorkerObject, WorkerOptions);
         }
         else {
-            throw new Error( 'WorkerObject is not a string or a function.' );
+            throw new Error('WorkerObject is not a string or a function.');
         }
-        super( _workerObject, WorkerOptions );
-        if ( this.#core.promise = WorkerOptions && WorkerOptions.promise ) {
+        super(_workerObject, WorkerOptions);
+        if (this.#core.promise = WorkerOptions && WorkerOptions.promise) {
             const messageHandler = message => {
-                if ( this.#core.promise ) {
+                if (this.#core.promise) {
                     const { id, err, data } = message.data;
-                    const resolve = this.#core.resolves[id];
-                    const reject = this.#core.rejects[id];
-                    if ( !err && resolve ) {
-                        resolve( data );
+                    if (id in this.#core.resolves || id in this.#core.rejects) {
+                        const resolve = this.#core.resolves[id];
+                        const reject = this.#core.rejects[id];
+                        if (!err && resolve) {
+                            resolve(data);
+                        }
+                        else if (reject && err) {
+                            reject(err);
+                        }
+                        delete this.#core.resolves[id];
+                        delete this.#core.rejects[id];
                     }
-                    else if ( reject && err ) {
-                        reject( err );
-                    }
-                    delete this.#core.resolves[id];
-                    delete this.#core.rejects[id];
                 }
             };
-            this.addEventListener( 'message', messageHandler );
-            this.addEventListener( 'messageerror', messageHandler );
+            this.addEventListener('message', messageHandler);
+            this.addEventListener('messageerror', messageHandler);
         }
-        Object.freeze( this.#core );
+        Object.freeze(this.#core);
     }
 
     /**
@@ -595,22 +646,22 @@ export class ExtendedWorker extends Worker {
      * @param {Transferable[]} [transfer] - Transferable Object List to pass to Worker
      * @returns {void|Promise}
      */
-    postMessage( message, transfer ) {
-        const id = this.#requests++;
-        if ( this.#core.promise ) {
-            const payload = Object.assign( Object.create( null ), { id, data: message } );
-            return new Promise( ( resolve, reject ) => {
+    postMessage(message, transfer) {
+        const id = globalThis.crypto.randomUUID();;
+        if (this.#core.promise) {
+            const payload = Object.assign(Object.create(null), { id, data: message });
+            return new Promise((resolve, reject) => {
                 this.#core.resolves[id] = resolve;
                 this.#core.rejects[id] = reject;
-                if ( transfer ) {
-                    super.postMessage( payload, transfer );
+                if (transfer) {
+                    super.postMessage(payload, transfer);
                 }
                 else {
-                    super.postMessage( payload );
+                    super.postMessage(payload);
                 }
-            } );
+            });
         }
-        super.postMessage( message, transfer );
+        super.postMessage(message, transfer);
     }
 
 }
@@ -622,7 +673,7 @@ export class Cluster {
     /**
      * @param {number} size - Number of Workers to spawn
      */
-    static set DEFAULT_SIZE( size ) {
+    static set DEFAULT_SIZE(size) {
         this.#DEFAULT_SIZE = size;
     }
 
@@ -638,9 +689,9 @@ export class Cluster {
      * @param {any} [data]
      * @param {Transferable[]} [transferable]
      */
-    static async run( func, data, transferable ) {
-        const cluster = new FunctionCluster( func );
-        const result = await cluster.run( data, transferable );
+    static async run(func, data, transferable) {
+        const cluster = new FunctionCluster(func);
+        const result = await cluster.run(data, transferable);
         cluster.terminate();
         return result;
     }
@@ -650,9 +701,9 @@ export class Cluster {
      * @param {any} [data]
      * @param {Transferable[]} [transferable]
      */
-    static async $run( func, data, transferable ) {
-        const cluster = new FunctionCluster( func );
-        const result = await cluster.$run( data, transferable );
+    static async $run(func, data, transferable) {
+        const cluster = new FunctionCluster(func);
+        const result = await cluster.$run(data, transferable);
         cluster.terminate();
         return result;
     }
@@ -662,9 +713,9 @@ export class Cluster {
      * @param {any} [data]
      * @param {Transferable[]} [transferable]
      */
-    static async _run( func, data, transferable ) {
-        const cluster = new FunctionCluster( func );
-        const result = await cluster._run( data, transferable );
+    static async _run(func, data, transferable) {
+        const cluster = new FunctionCluster(func);
+        const result = await cluster._run(data, transferable);
         cluster.terminate();
         return result;
     }
@@ -675,9 +726,9 @@ export class Cluster {
      * @param {Transferable[]} [transferable]
      */
     // eslint-disable-next-line camelcase
-    static async $_run( func, data, transferable ) {
-        const cluster = new FunctionCluster( func );
-        const result = await cluster.$_run( data, transferable );
+    static async $_run(func, data, transferable) {
+        const cluster = new FunctionCluster(func);
+        const result = await cluster.$_run(data, transferable);
         cluster.terminate();
         return result;
     }
@@ -691,8 +742,8 @@ export class Cluster {
      * @param {ExtendedWorkerOptions & ClusterOptions} [ClusterOptions]
      * @returns {ClusterProxy}
      */
-    static new( WorkerObject, ClusterOptions = { } ) {
-        return new ClusterProxy( WorkerObject, { promise: true, type: 'module', includeHandler: true, size: Cluster.DEFAULT_SIZE, ...ClusterOptions } );
+    static new(WorkerObject, ClusterOptions = {}) {
+        return new ClusterProxy(WorkerObject, { promise: true, type: 'module', includeHandler: true, size: Cluster.DEFAULT_SIZE, ...ClusterOptions });
     }
 
     #core = {
@@ -706,23 +757,23 @@ export class Cluster {
      * @param {string|Function} WorkerObject
      * @param {ExtendedWorkerOptions & ClusterOptions} [ClusterOptions]
      */
-    constructor( WorkerObject, ClusterOptions ) {
-        const size = ( ClusterOptions ? ClusterOptions.size : Cluster.DEFAULT_SIZE ) || Cluster.DEFAULT_SIZE;
-        this.#core.workers = Array( size );
+    constructor(WorkerObject, ClusterOptions) {
+        const size = (ClusterOptions ? ClusterOptions.size : Cluster.DEFAULT_SIZE) || Cluster.DEFAULT_SIZE;
+        this.#core.workers = Array(size);
         this.#core.size = size;
-        for ( let i = 0; i < this.#core.size; i++ ) {
-            this.#core.workers[i] = new ExtendedWorker( WorkerObject, ClusterOptions );
+        for (let i = 0; i < this.#core.size; i++) {
+            this.#core.workers[i] = new ExtendedWorker(WorkerObject, ClusterOptions);
         }
-        Object.freeze( this.#core.workers );
-        Object.freeze( this.#core );
+        Object.freeze(this.#core.workers);
+        Object.freeze(this.#core);
     }
 
     /**
      * @param {Event} event
      * @returns {Boolean[]}
      */
-    dispatchEvent( event ) {
-        return Promise.all( this.#core.workers.map( worker => worker.dispatchEvent( event ) ) );
+    dispatchEvent(event) {
+        return Promise.all(this.#core.workers.map(worker => worker.dispatchEvent(event)));
     }
 
     /**
@@ -731,8 +782,8 @@ export class Cluster {
      * @param {MessageHandler} listener
      * @param {boolean|AddEventListenerOptions} [options]
      */
-    addEventListener( type, listener, options ) {
-        return Promise.all( this.#core.workers.map( worker => worker.addEventListener( type, listener, options ) ) );
+    addEventListener(type, listener, options) {
+        return Promise.all(this.#core.workers.map(worker => worker.addEventListener(type, listener, options)));
     }
 
     /**
@@ -741,8 +792,8 @@ export class Cluster {
      * @param {MessageHandler} listener
      * @param {boolean|EventListenerOptions} [options]
      */
-    removeEventListener( type, listener, options ) {
-        return Promise.all( this.#core.workers.map( worker => worker.removeEventListener( type, listener, options ) ) );
+    removeEventListener(type, listener, options) {
+        return Promise.all(this.#core.workers.map(worker => worker.removeEventListener(type, listener, options)));
     }
 
     /**
@@ -752,24 +803,24 @@ export class Cluster {
      * @param {ClusterMessageOptions} [options] - Advanced Options for `postMessage function
      * @returns {Promise}
      */
-    postMessage( message, transfer, { modes: { race, spread } = {}, data, transferable } = {} ) {
-        if ( race !== undefined || spread !== undefined ) {
-            switch ( true ) {
+    postMessage(message, transfer, { modes: { race, spread } = {}, data, transferable } = {}) {
+        if (race !== undefined || spread !== undefined) {
+            switch (true) {
                 case race && spread:
-                    return Promise.race( this.#core.workers.map( ( worker, i ) => worker.postMessage( { ...message, data: data[i] }, transferable ? transferable[i] : null ) ) );
+                    return Promise.race(this.#core.workers.map((worker, i) => worker.postMessage({ ...message, data: data[i] }, transferable ? transferable[i] : null)));
                 case race:
-                    return Promise.race( this.#core.workers.map( worker => worker.postMessage( { ...message, data }, transferable ) ) );
+                    return Promise.race(this.#core.workers.map(worker => worker.postMessage({ ...message, data }, transferable)));
                 case spread:
-                    return Promise.all( this.#core.workers.map( ( worker, i ) => worker.postMessage( { ...message, data: data[i] }, transferable ? transferable[i] : null ) ) );
+                    return Promise.all(this.#core.workers.map((worker, i) => worker.postMessage({ ...message, data: data[i] }, transferable ? transferable[i] : null)));
                 default:
-                    return Promise.all( this.#core.workers.map( worker => worker.postMessage( { ...message, data }, transferable ) ) );
+                    return Promise.all(this.#core.workers.map(worker => worker.postMessage({ ...message, data }, transferable)));
             }
         }
-        return Promise.all( this.#core.workers.map( worker => worker.postMessage( message, transfer ) ) );
+        return Promise.all(this.#core.workers.map(worker => worker.postMessage(message, transfer)));
     }
 
     terminate() {
-        for ( const worker of this.#core.workers ) {
+        for (const worker of this.#core.workers) {
             worker.terminate();
         }
     }
@@ -782,16 +833,16 @@ export class FunctionWorker extends ExtendedWorkerProxy {
      * @param {Function} fn
      * @param {WorkerOptions} [WorkerOptions]
      */
-    constructor( fn, WorkerOptions ) {
-        super( `async()=>_.proxy_run(${ fn.toString() })`, { promise: true, type: 'module', includeHandler: true, ...WorkerOptions } );
+    constructor(fn, WorkerOptions) {
+        super(`async()=>_.proxy_run(${fn.toString()})`, { promise: true, type: 'module', includeHandler: true, ...WorkerOptions });
     }
 
     /**
      * @param {...any} [args]
      * @returns {Promise}
      */
-    run( ...args ) {
-        return super.proxy_run( ...args );
+    run(...args) {
+        return super.proxy_run(...args);
     }
 
 }
@@ -802,32 +853,32 @@ export class FunctionCluster extends ClusterProxy {
      * @param {Function} fn
      * @param {ClusterOptions} [ClusterOptions]
      */
-    constructor( fn, ClusterOptions ) {
-        super( `async()=>_.proxy_run(${ fn })`, { size: Cluster.DEFAULT_SIZE, ...ClusterOptions } );
+    constructor(fn, ClusterOptions) {
+        super(`async()=>_.proxy_run(${fn})`, { size: Cluster.DEFAULT_SIZE, ...ClusterOptions });
     }
 
     /**
      * @param {...any} [args]
      * @returns {Promise}
      */
-    run( ...args ) {
-        return super.proxy_run( ...args );
+    run(...args) {
+        return super.proxy_run(...args);
     }
 
     /**
      * @param {...any} [args]
      * @returns {Promise}
      */
-    $run( ...args ) {
-        return super.$proxy_run( ...args );
+    $run(...args) {
+        return super.$proxy_run(...args);
     }
 
     /**
      * @param {...any} [args]
      * @returns {Promise}
      */
-    _run( ...args ) {
-        return super._proxy_run( ...args );
+    _run(...args) {
+        return super._proxy_run(...args);
     }
 
     /**
@@ -835,8 +886,8 @@ export class FunctionCluster extends ClusterProxy {
      * @returns {Promise}
      */
     // eslint-disable-next-line camelcase
-    $_run( ...args ) {
-        return super.$_proxy_run( ...args );
+    $_run(...args) {
+        return super.$_proxy_run(...args);
     }
 
 }
