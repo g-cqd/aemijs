@@ -1,0 +1,57 @@
+{
+  "name": "aemijs",
+  "version": "1.0.0",
+  "description": "A tiny, dependency-free, cross-runtime toolkit of bleeding-edge vanilla JavaScript. Run functions off-thread anywhere, plus a few fun helpers the platform still lacks.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./src/core/index.js",
+    "./workers": "./src/core/workers.js",
+    "./fp": "./src/core/fp.js",
+    "./math": "./src/core/math.js",
+    "./data": "./src/core/data.js",
+    "./bench": "./src/core/bench.js",
+    "./dom": {
+      "browser": "./src/dom/index.js",
+      "default": "./src/dom/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "lint": "eslint src test",
+    "test": "node --test",
+    "test:node": "node --test",
+    "test:bun": "bun test test/",
+    "test:deno": "deno test --allow-read --allow-net --allow-env",
+    "build": "node scripts/build.js",
+    "prepack": "npm run build",
+    "check": "npm run lint && npm test"
+  },
+  "keywords": [
+    "worker",
+    "worker-threads",
+    "cross-runtime",
+    "multithread",
+    "off-thread",
+    "esm",
+    "vanilla-js",
+    "deno",
+    "bun",
+    "csv",
+    "easing",
+    "bigint"
+  ],
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "happy-dom": "^20.0.0"
+  }
+}
