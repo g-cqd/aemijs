@@ -15,6 +15,9 @@
     "./math": "./src/core/math.js",
     "./data": "./src/core/data.js",
     "./bench": "./src/core/bench.js",
+    "./rand": "./src/core/rand.js",
+    "./hash": "./src/core/hash.js",
+    "./struct": "./src/core/struct.js",
     "./dom": {
       "browser": "./src/dom/index.js",
       "default": "./src/dom/index.js"
@@ -26,14 +29,15 @@
     "README.md"
   ],
   "scripts": {
-    "lint": "eslint src test",
-    "test": "node --test",
+    "lint": "bunx eslint src test bench scripts",
+    "test": "bun test test/",
     "test:node": "node --test",
     "test:bun": "bun test test/",
     "test:deno": "deno test --allow-read --allow-net --allow-env",
-    "build": "node scripts/build.js",
-    "prepack": "npm run build",
-    "check": "npm run lint && npm test"
+    "build": "bun scripts/build.js",
+    "prepack": "bun run build",
+    "bench": "bun bench/run.mjs",
+    "check": "bun run lint && bun run test && bun run test:node && bun run test:deno"
   },
   "keywords": [
     "worker",
@@ -51,7 +55,14 @@
   ],
   "devDependencies": {
     "@eslint/js": "^9.39.0",
+    "comlink": "^4.4.2",
+    "denque": "^2.1.0",
     "eslint": "^9.39.0",
-    "happy-dom": "^20.0.0"
+    "happy-dom": "^20.0.0",
+    "lru-cache": "^11.0.0",
+    "mitata": "^1.0.34",
+    "papaparse": "^5.5.3",
+    "udsv": "^0.7.3",
+    "xxhash-wasm": "^1.1.0"
   }
 }

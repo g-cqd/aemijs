@@ -7,32 +7,34 @@ on:
 
 jobs:
   verify:
-    name: Lint, test (Node/Bun/Deno) & build
+    name: Lint, test (Bun/Node/Deno) & build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      # Bun is the primary toolchain (install, lint, test, build).
+      - uses: oven-sh/setup-bun@v2
+      # Node and Deno are installed solely for the cross-runtime test matrix.
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - uses: oven-sh/setup-bun@v2
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
 
-      - run: npm ci
+      - run: bun install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
-
-      - name: Test on Node
-        run: npm run test:node
+        run: bun run lint
 
       - name: Test on Bun
-        run: npm run test:bun
+        run: bun run test:bun
+
+      - name: Test on Node
+        run: bun run test:node
 
       - name: Test on Deno
-        run: npm run test:deno
+        run: bun run test:deno
 
       - name: Build bundles
-        run: npm run build
+        run: bun run build

@@ -10,7 +10,7 @@ const platform = [
     'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval',
     'process', 'document', 'window', 'scheduler', 'cookieStore', 'Temporal',
     'Response', 'Request', 'Headers', 'Image', 'DOMException', 'Node',
-    'Element', 'Blob', 'Event',
+    'Element', 'Blob', 'Event', 'Bun',
 ].reduce((acc, name) => { acc[name] = 'readonly'; return acc; }, {});
 
 export default [

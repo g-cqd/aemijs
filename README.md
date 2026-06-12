@@ -29,8 +29,9 @@ import { ecs, Wait, Cookies } from 'aemijs/dom';
 ```
 
 Modern runtimes import the source ESM directly — no bundling needed. For a
-`<script type="module">` / CDN drop-in, `npm run build` emits minified bundles
-(`dist/aemi.min.js`, **~5 KB gzipped**).
+`<script type="module">` / CDN drop-in, `bun run build` emits minified bundles
+(`dist/aemi.min.js`, **~8.6 KB gzipped** for the whole core — subpath imports
+stay far leaner).
 
 ## Runtime support
 
@@ -38,7 +39,7 @@ Modern runtimes import the source ESM directly — no bundling needed. For a
 |---|:--:|:--:|:--:|:--:|
 | `aemijs/workers` | ✅ | ✅ | ✅ | ✅ |
 | `aemijs/fp` · `/math` · `/bench` | ✅ | ✅ | ✅ | ✅ |
-| `aemijs/data` | ✅ | ✅ | ✅ | ✅ |
+| `aemijs/data` · `/rand` · `/hash` · `/struct` | ✅ | ✅ | ✅ | ✅ |
 | `aemijs/dom` | — | — | — | ✅ |
 
 ## `aemijs/workers` — off-thread, everywhere
@@ -120,8 +121,60 @@ import { Benchmark } from 'aemijs/bench';
 await new Benchmark()
     .add('Map.groupBy', () => Map.groupBy(items, keyOf))
     .add('manual', () => manualGroup(items, keyOf))
-    .table();   // ranks by ops/sec, fastest first
+    .table();   // ranks by ops/sec (median), with p99 and ±stddev
 ```
+
+Measures the way mitata does: per-function generated kernels (monomorphic call
+sites, with a closure fallback under strict CSP), auto-calibrated ≥0.5 ms
+batches between clock reads, a DCE sink, and median/p99 stats — the previous
+per-iteration-`await` design under-reported sync throughput by 500-950×.
+
+## `aemijs/rand` — seeded randomness
+
+```js
+import { splitmix32, xoshiro128ss, randInt, shuffle } from 'aemijs/rand';
+
+const rng = splitmix32(42);     // deterministic; ~1.9x faster than Math.random on V8
+rng();                          // float in [0, 1)
+rng.u32();                      // raw uint32
+randInt(1, 6, rng);             // unbiased (rejection-sampled) die roll
+shuffle(deck, rng);             // seeded Fisher-Yates, returns a new array
+```
+
+## `aemijs/hash` — short-key hashing (no platform equivalent)
+
+```js
+import { fnv1a, cyrb53, xxh32 } from 'aemijs/hash';
+
+fnv1a('cache-key');                          // u32 — fastest for keys ≤64B
+cyrb53('cache-key');                         // 53-bit — far fewer collisions
+xxh32(bytes);                                // bit-exact xxHash32 over Uint8Array
+```
+
+Measured: these beat `xxhash-wasm` 3-5× below ~64B (V8) / ~256-512B (JSC)
+because nothing crosses the JS↔WASM boundary. For ≥1KB bulk payloads WASM wins
+2-4× — these are short-key hashes by design, and never for passwords.
+
+## `aemijs/struct` — Deque, MinHeap, LRU
+
+```js
+import { Deque, MinHeap, LRU } from 'aemijs/struct';
+
+const queue = new Deque();      // ring buffer: Array#shift goes O(n²) on V8
+queue.push(job); queue.shift(); // (measured: 1000ms vs 9ms draining 100k)
+
+const pq = new MinHeap((a, b) => a.priority - b.priority);
+pq.push(task); pq.pop();        // 3.5-4.7x faster than sorted-array insertion
+
+const cache = new LRU(10_000);  // exact LRU, O(1) eviction via a persistent
+cache.set(key, value);          // Map iterator (the naive Map idiom is 8-20x
+cache.get(key);                 // slower). lru-cache is ~1.2x faster; this is
+                                // the zero-dependency option.
+```
+
+`aemijs/fp` also gained `once`, `memoize` (≈2 ns hit overhead), `debounce`, and
+`throttle` (cancellable via `.cancel()` / `AbortSignal`) — TC39 withdrew its
+function-helpers proposal, so the platform won't be providing these.
 
 ## `aemijs/dom` — browser-only helpers
 
@@ -142,18 +195,49 @@ markup (via the Sanitizer API / a DOMPurify hook) or `unsafeHTML:` for trusted
 markup. `Cookies` prefers the async `cookieStore` API and falls back to
 `document.cookie`.
 
+## Performance
+
+Everything below is measured (Apple Silicon, Node 26 / Bun 1.3 / Deno 2.8,
+mitata) and reproducible from the committed suite: `bun run bench` (per file:
+`node bench/<file>.bench.mjs`, `deno run -A bench/<file>.bench.mjs`).
+
+| Workload | aemijs vs … | Result |
+|---|---|---|
+| CSV parse (8MB numeric / 2.7MB quoted) | papaparse | **1.7-2.6× faster** everywhere |
+| | udsv (fastest JS parser) | **wins quoted data** on all runtimes + everything on Bun; trails udsv's schema-codegen on V8 small/numeric (≤1.8×) |
+| Worker RPC echo (tiny msg) | Comlink | **~20-30% faster** (21µs vs 27µs on Bun) |
+| Worker RPC (1MB clone) | Comlink | **~1.7-2× faster** (replies auto-transfer) |
+| 64 × 1ms jobs | single worker | **3.9× faster** (pool + 2-deep pipelining) |
+| fib / fact / div (BigInt) | naive algorithms | **16-167× / 3.5-35× / 1.8-4.7×** (fast-doubling, binary-split, base-1e9 chunking) |
+| Short-key hashing (≤64B) | xxhash-wasm | **3-5× faster** (no JS↔WASM boundary) |
+| FIFO at depth (drain 100k) | `Array#shift` on V8 | **~110× faster** (ring buffer vs O(n²)) |
+| LRU (100k ops @10k cap) | naive Map idiom | **8-20× faster** (persistent-iterator eviction) |
+
+Honest losses, documented where they live: udsv's codegen wins V8
+small/numeric CSV; `lru-cache` is ~1.2× faster than our zero-dep `LRU`;
+WASM wins bulk (≥1KB) hashing; a pool loses to a single pipelined worker on
+trivial (<0.1ms) jobs; one-shot `run()` pays 2-19ms of worker startup — use
+`spawn`/`WorkerPool` for repeated calls.
+
 ## Development
 
+Bun drives the tooling; the library and tests stay runtime-portable.
+
 ```sh
-npm test            # node --test
-npm run test:bun    # bun test
-npm run test:deno   # deno test
-npm run lint        # eslint (flat config)
-npm run build       # minified ESM bundles via `bun build`
+bun install         # deps (bun.lock)
+bun test test/      # primary test run
+bun run test:node   # same suite on Node (node --test)
+bun run test:deno   # same suite on Deno
+bun run lint        # eslint (flat config)
+bun run build       # minified ESM bundles via Bun.build()
+bun run bench       # mitata benchmark suite vs SOTA packages
 ```
 
-The same `test/*.js` suite (`node:test`) runs green on Node, Bun and Deno; the
+The same `test/*.js` suite (`node:test`) runs green on Bun, Node and Deno; the
 DOM suite runs against `happy-dom`.
+
+> Breaking change vs the initial rewrite: `div()`'s `decimal` field is now a
+> digit *string* (was `number[]`); `toString()` output is unchanged.
 
 ## License
 
