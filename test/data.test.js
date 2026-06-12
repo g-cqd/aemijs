@@ -17,6 +17,32 @@ test('parseCSV handles CRLF and quoted newlines', () => {
     assert.deepEqual(matrix, [['a', 'b'], ['1', 'line\nbreak']]);
 });
 
+test('parseCSV edge suite (ported from the v2 verification gate)', () => {
+    // lone-\r row separators
+    assert.deepEqual(parseCSV('a,b\rc,d'), [['a', 'b'], ['c', 'd']]);
+    // trailing delimiter -> trailing empty field
+    assert.deepEqual(parseCSV('a,b,\n1,2,'), [['a', 'b', ''], ['1', '2', '']]);
+    // trailing newline -> no phantom empty row
+    assert.deepEqual(parseCSV('a,b\n'), [['a', 'b']]);
+    // empty line between rows -> single empty field row
+    assert.deepEqual(parseCSV('a\n\nb'), [['a'], [''], ['b']]);
+    // escaped quotes, lone and consecutive
+    assert.deepEqual(parseCSV('"x""y"'), [['x"y']]);
+    assert.deepEqual(parseCSV('""""'), [['"']]);
+    // empty quoted field
+    assert.deepEqual(parseCSV('"",a'), [['', 'a']]);
+    // quoted field containing delimiter and CRLF
+    assert.deepEqual(parseCSV('"a,b","c\r\nd"'), [['a,b', 'c\r\nd']]);
+    // unterminated quote consumes the rest of the input
+    assert.deepEqual(parseCSV('"abc\ndef'), [['abc\ndef']]);
+    // empty input
+    assert.deepEqual(parseCSV(''), []);
+    // custom delimiter
+    assert.deepEqual(parseCSV('a;b\n1;2', { delimiter: ';' }), [['a', 'b'], ['1', '2']]);
+    // trim option
+    assert.deepEqual(parseCSV(' a , b ', { trim: true }), [['a', 'b']]);
+});
+
 test('Dataset.parse applies typed coercers per column', () => {
     const ds = Dataset.parse(CSV, { types: { age: coercers.number } });
     assert.deepEqual(ds.columns, ['name', 'age', 'city']);

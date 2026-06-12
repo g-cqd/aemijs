@@ -50,3 +50,28 @@ test('fib is correct from 0 (the old off-by-one is gone)', () => {
     assert.equal(fib(100), 354224848179261915075n);
     assert.throws(() => fib(-1), RangeError);
 });
+
+test('fib fast-doubling matches known large values', () => {
+    assert.equal(fib(90), 2880067194370816120n);
+    const f1000 = fib(1000).toString();
+    assert.equal(f1000.length, 209);
+    assert.ok(f1000.startsWith('43466557686937456435'));
+    assert.ok(f1000.endsWith('76137795166849228875'));
+    assert.throws(() => fib(2 ** 31), RangeError);
+});
+
+test('fact binary-split matches the canonical 100!', () => {
+    const f100 = fact(100).toString();
+    assert.equal(f100.length, 158);
+    assert.ok(f100.startsWith('93326215443944152681'));
+    assert.equal(fact(8), 40320n, 'leaf-threshold boundary');
+    assert.equal(fact(9), 362880n, 'first split');
+});
+
+test('div chunked digits: strip-then-cut rule and repeating expansions', () => {
+    assert.equal(div(1, 100000, 3).toString(), '0.000', 'truncated terminating expansion keeps significant zeros');
+    assert.equal(div(1, 100000, 10).toString(), '0.00001', 'full terminating expansion strips pad zeros');
+    assert.equal(div(22, 7, 30).toString(), '3.142857142857142857142857142857');
+    assert.equal(typeof div(1, 3, 5).decimal, 'string');
+    assert.equal(div(1, 3, 5).decimal, '33333');
+});

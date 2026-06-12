@@ -48,6 +48,32 @@ test('WorkerPool runs jobs concurrently and returns all results', async () => {
     }
 });
 
+test('WorkerPool burst: 1000 queued jobs all resolve correctly (ring queue + pipelining)', async () => {
+    const pool = new WorkerPool((n) => n + 1, { size: 4 });
+    try {
+        const jobs = Array.from({ length: 1000 }, (_, i) => pool.call(i));
+        const out = await Promise.all(jobs);
+        for (let i = 0; i < 1000; i += 1) {
+            assert.equal(out[i], i + 1);
+        }
+    } finally {
+        await pool.terminate();
+    }
+});
+
+test('WorkerPool terminate rejects queued jobs', async () => {
+    const pool = new WorkerPool(async (ms) => {
+        await new Promise((r) => setTimeout(r, ms));
+        return ms;
+    }, { size: 1 });
+    const slow = pool.call(1000);
+    const queued = pool.call(1000);
+    await new Promise((r) => setTimeout(r, 50)); // let init+dispatch happen
+    await pool.terminate();
+    await assert.rejects(slow);
+    await assert.rejects(queued);
+});
+
 test('transfer moves an ArrayBuffer without copying', async () => {
     const buf = new Uint8Array([1, 2, 3, 4]).buffer;
     const sum = await run((ab) => new Uint8Array(ab).reduce((a, b) => a + b, 0), buf, { transfer: [buf] });
